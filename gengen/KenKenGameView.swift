@@ -11,9 +11,6 @@ struct KenKenGameView: View {
     @ObservedObject var game: KenKenGame
     let onNewGame: () -> Void
     
-    @State private var showingNumberPicker = false
-    @State private var pickerPosition: Position?
-    
     var body: some View {
         VStack(spacing: 20) {
             // Game grid
@@ -21,37 +18,23 @@ struct KenKenGameView: View {
                 game: game,
                 onCellTap: { position in
                     game.selectedPosition = position
-                    pickerPosition = position
-                    showingNumberPicker = true
                 }
             )
             
+            // Number input buttons
+            NumberInputView(game: game)
+            
             // Controls
-            HStack {
-                Button("New Game") {
-                    onNewGame()
-                }
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.blue)
-                .cornerRadius(8)
-                
-                Button("Clear") {
-                    if let selected = game.selectedPosition {
-                        game.setValue(nil, at: selected)
-                    }
-                }
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.red)
-                .cornerRadius(8)
+            Button("New Game") {
+                onNewGame()
             }
+            .font(.title2)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(Color.blue)
+            .cornerRadius(8)
             .padding(.horizontal)
         }
         .alert("Congratulations!", isPresented: $game.isCompleted) {
@@ -59,15 +42,6 @@ struct KenKenGameView: View {
             Button("OK") { }
         } message: {
             Text("You solved the puzzle!")
-        }
-        .sheet(isPresented: $showingNumberPicker) {
-            if let position = pickerPosition {
-                NumberPickerView(
-                    game: game,
-                    position: position,
-                    onDismiss: { showingNumberPicker = false }
-                )
-            }
         }
     }
 }
@@ -174,63 +148,66 @@ struct CellView: View {
     }
 }
 
-struct NumberPickerView: View {
+struct NumberInputView: View {
     @ObservedObject var game: KenKenGame
-    let position: Position
-    let onDismiss: () -> Void
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("Choose a number")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+        VStack(spacing: 15) {
+            Text("Select a cell, then choose a number:")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            HStack(spacing: 12) {
+                // Clear button
+                Button(action: {
+                    if let selected = game.selectedPosition {
+                        game.setValue(nil, at: selected)
+                    }
+                }) {
+                    Text("Clear")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(game.selectedPosition != nil ? Color.red : Color.gray)
+                        .cornerRadius(8)
+                }
+                .disabled(game.selectedPosition == nil)
                 
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 15) {
-                    ForEach(1...game.size, id: \.self) { number in
-                        Button(action: {
-                            game.setValue(number, at: position)
-                            onDismiss()
-                        }) {
-                            Text("\(number)")
-                                .font(.title)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
-                                .background(
-                                    game.isValidMove(number, at: position) ? Color.blue : Color.gray
-                                )
-                                .cornerRadius(8)
+                // Number buttons
+                ForEach(1...game.size, id: \.self) { number in
+                    Button(action: {
+                        if let selected = game.selectedPosition {
+                            game.setValue(number, at: selected)
                         }
-                        .disabled(!game.isValidMove(number, at: position))
+                    }) {
+                        Text("\(number)")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(buttonColor(for: number))
+                            .cornerRadius(8)
                     }
-                }
-                .padding()
-                
-                Button("Clear") {
-                    game.setValue(nil, at: position)
-                    onDismiss()
-                }
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.red)
-                .cornerRadius(8)
-                .padding(.horizontal)
-                
-                Spacer()
-            }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        onDismiss()
-                    }
+                    .disabled(!canEnterNumber(number))
                 }
             }
+        }
+        .padding(.horizontal)
+    }
+    
+    private func canEnterNumber(_ number: Int) -> Bool {
+        guard let selected = game.selectedPosition else { return false }
+        return game.isValidMove(number, at: selected)
+    }
+    
+    private func buttonColor(for number: Int) -> Color {
+        guard let selected = game.selectedPosition else { return Color.gray }
+        
+        if game.isValidMove(number, at: selected) {
+            return Color.blue
+        } else {
+            return Color.gray
         }
     }
 }

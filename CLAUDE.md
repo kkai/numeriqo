@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Swift/SwiftUI iOS/macOS application called "gengen" - a multiplatform app supporting iPhone, iPad, Mac, and Apple Vision Pro. The project uses a minimal SwiftUI architecture with basic sandbox entitlements.
+This is a Swift/SwiftUI iOS/macOS application called "gengen" - a KenKen puzzle game supporting iPhone, iPad, Mac, and Apple Vision Pro. The app allows users to play KenKen puzzles of varying difficulty levels (3x3 to 6x6 grids) with dynamically generated cages and mathematical operations.
 
 ## Development Commands
 
@@ -37,16 +37,30 @@ Open the project in Xcode and use Cmd+R to run, or use xcodebuild with appropria
 
 ## Architecture
 
+### Core Components
 - **App Entry Point**: `gengenApp.swift` - Main app struct with WindowGroup scene
-- **Main View**: `ContentView.swift` - Simple SwiftUI view with globe icon and "Hello, world!" text
+- **Main View**: `ContentView.swift` - Navigation between size selection and game play, manages game state
+- **Game Logic**: `KenKenGame.swift` - Core game logic, puzzle generation, validation, and Latin square generation
+- **Game UI**: `KenKenGameView.swift` - Game interface with grid, cage backgrounds, number picker, and controls
+
+### Key Data Structures
+- **KenKenGame**: ObservableObject managing game state, grid, cages, and validation
+- **Cage**: Represents a group of cells with mathematical operation and target value
+- **Position**: Row/column coordinate structure for grid positions
+- **Operation**: Enum for mathematical operations (add, subtract, multiply, divide, none)
+
+### Game Flow
+1. Size selection screen (3x3, 4x4, 5x5, 6x6)
+2. Dynamic puzzle generation with Latin square solution
+3. Cage generation with adjacent cells and random operations
+4. Interactive gameplay with number picker and validation
+5. Win condition checking and completion alert
+
+## Technical Details
+
 - **Target Platforms**: iOS 18.5+, macOS 15.5+, visionOS 2.5+
 - **Swift Version**: 5.0
 - **Bundle ID**: de.kaikunze.gengen
-
-## Key Configuration
-
-- App uses sandbox entitlements with read-only file access
-- Development team: 8H42EZRCCP
-- Multi-platform support with device families: iPhone, iPad, Apple Vision Pro
-- SwiftUI Previews enabled
-- Hardened Runtime enabled for macOS
+- **Development Team**: 8H42EZRCCP
+- **Entitlements**: App sandbox with read-only file access
+- **UI Framework**: SwiftUI with ObservableObject pattern for state management
