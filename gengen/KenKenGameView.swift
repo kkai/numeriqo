@@ -1,5 +1,5 @@
 //
-//  KenKenGameView.swift
+//  MathMazeGameView.swift
 //  gengen
 //
 //  Created by kai on 27.07.25.
@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-struct KenKenGameView: View {
-    @ObservedObject var game: KenKenGame
+struct MathMazeGameView: View {
+    @ObservedObject var game: MathMazeGame
     let onNewGame: () -> Void
     
     var body: some View {
@@ -31,12 +31,20 @@ struct KenKenGameView: View {
             .font(.title2)
             .fontWeight(.semibold)
             .foregroundColor(.white)
+            #if os(macOS)
+            .frame(width: 200, height: 44)
+            #else
             .frame(maxWidth: .infinity)
             .frame(height: 44)
+            #endif
             .background(Color.blue)
             .cornerRadius(8)
             .padding(.horizontal)
         }
+        #if os(macOS)
+        .frame(maxWidth: 600)
+        .padding()
+        #endif
         .alert("Congratulations!", isPresented: $game.isCompleted) {
             Button("New Game", action: onNewGame)
             Button("OK") { }
@@ -47,7 +55,7 @@ struct KenKenGameView: View {
 }
 
 struct GameGridView: View {
-    @ObservedObject var game: KenKenGame
+    @ObservedObject var game: MathMazeGame
     let onCellTap: (Position) -> Void
     
     var body: some View {
@@ -60,7 +68,12 @@ struct GameGridView: View {
                     CageBackgroundView(cage: cage, cellSize: cellSize, game: game)
                 }
                 
-                // Grid lines and cells
+                // Cage labels
+                ForEach(game.cages) { cage in
+                    CageLabelView(cage: cage, cellSize: cellSize, game: game)
+                }
+                
+                // Grid cells
                 VStack(spacing: 1) {
                     ForEach(0..<game.size, id: \.self) { row in
                         HStack(spacing: 1) {
@@ -68,6 +81,7 @@ struct GameGridView: View {
                                 CellView(
                                     position: Position(row: row, col: col),
                                     game: game,
+                                    cellSize: cellSize,
                                     onTap: onCellTap
                                 )
                                 .frame(width: cellSize, height: cellSize)
@@ -82,62 +96,55 @@ struct GameGridView: View {
     }
 }
 
-struct CageBackgroundView: View {
+struct CageLabelView: View {
     let cage: Cage
     let cellSize: CGFloat
-    @ObservedObject var game: KenKenGame
+    @ObservedObject var game: MathMazeGame
     
     var body: some View {
-        ZStack {
-            // Background color for cage
-            ForEach(Array(cage.positions), id: \.self) { position in
-                Rectangle()
-                    .fill(cage.color)
-                    .frame(width: cellSize, height: cellSize)
-                    .position(
-                        x: CGFloat(position.col) * cellSize + cellSize / 2,
-                        y: CGFloat(position.row) * cellSize + cellSize / 2
-                    )
-            }
-            
-            // Cage label (operation and target)
-            if let topLeft = cage.positions.min(by: { $0.row < $1.row || ($0.row == $1.row && $0.col < $1.col) }) {
-                Text("\(cage.target)\(cage.operation.rawValue)")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .position(
-                        x: CGFloat(topLeft.col) * cellSize + 8,
-                        y: CGFloat(topLeft.row) * cellSize + 8
-                    )
-            }
+        // Cage label (operation and target)
+        if let topLeft = cage.positions.min(by: { $0.row < $1.row || ($0.row == $1.row && $0.col < $1.col) }) {
+            Text("\(cage.target)\(cage.operation.rawValue)")
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundColor(.black)
+                .position(
+                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.35,
+                    y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15
+                )
         }
     }
 }
 
 struct CellView: View {
     let position: Position
-    @ObservedObject var game: KenKenGame
+    @ObservedObject var game: MathMazeGame
+    let cellSize: CGFloat
     let onTap: (Position) -> Void
     
     var body: some View {
         ZStack {
+            // Transparent cell background
             Rectangle()
                 .fill(Color.clear)
-                .overlay(
-                    Rectangle()
-                        .stroke(
-                            game.selectedPosition == position ? Color.blue : Color.black,
-                            lineWidth: game.selectedPosition == position ? 3 : 1
-                        )
-                )
             
+            // Number display
             if let value = game.getValue(at: position) {
                 Text("\(value)")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(
                         game.isValidMove(value, at: position) ? .primary : .red
+                    )
+            }
+            
+            // Selection highlight
+            if game.selectedPosition == position {
+                Rectangle()
+                    .fill(Color.blue.opacity(0.2))
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.blue, lineWidth: 2)
                     )
             }
         }
@@ -148,8 +155,77 @@ struct CellView: View {
     }
 }
 
+struct CageBackgroundView: View {
+    let cage: Cage
+    let cellSize: CGFloat
+    @ObservedObject var game: MathMazeGame
+    
+    var body: some View {
+        ZStack {
+            // Background fill for entire cage as a single shape
+            Path { path in
+                for position in cage.positions {
+                    let x = CGFloat(position.col) * (cellSize + 1) - 0.5
+                    let y = CGFloat(position.row) * (cellSize + 1) - 0.5
+                    path.addRect(CGRect(x: x, y: y, width: cellSize + 2, height: cellSize + 2))
+                }
+            }
+            .fill(cage.color)
+            
+            // Single border around the entire cage
+            CageOutlineView(cage: cage, cellSize: cellSize)
+        }
+    }
+}
+
+struct CageOutlineView: View {
+    let cage: Cage
+    let cellSize: CGFloat
+    
+    var body: some View {
+        Path { path in
+            // Draw border segments around the cage perimeter
+            for position in cage.positions {
+                let x = CGFloat(position.col) * (cellSize + 1)
+                let y = CGFloat(position.row) * (cellSize + 1)
+                
+                // Check each side of the cell to see if it's on the cage boundary
+                
+                // Top border
+                let topNeighbor = Position(row: position.row - 1, col: position.col)
+                if !cage.positions.contains(topNeighbor) {
+                    path.move(to: CGPoint(x: x - 1, y: y))
+                    path.addLine(to: CGPoint(x: x + cellSize + 1, y: y))
+                }
+                
+                // Bottom border
+                let bottomNeighbor = Position(row: position.row + 1, col: position.col)
+                if !cage.positions.contains(bottomNeighbor) {
+                    path.move(to: CGPoint(x: x - 1, y: y + cellSize))
+                    path.addLine(to: CGPoint(x: x + cellSize + 1, y: y + cellSize))
+                }
+                
+                // Left border
+                let leftNeighbor = Position(row: position.row, col: position.col - 1)
+                if !cage.positions.contains(leftNeighbor) {
+                    path.move(to: CGPoint(x: x, y: y - 1))
+                    path.addLine(to: CGPoint(x: x, y: y + cellSize + 1))
+                }
+                
+                // Right border
+                let rightNeighbor = Position(row: position.row, col: position.col + 1)
+                if !cage.positions.contains(rightNeighbor) {
+                    path.move(to: CGPoint(x: x + cellSize, y: y - 1))
+                    path.addLine(to: CGPoint(x: x + cellSize, y: y + cellSize + 1))
+                }
+            }
+        }
+        .stroke(Color.black, lineWidth: 3)
+    }
+}
+
 struct NumberInputView: View {
-    @ObservedObject var game: KenKenGame
+    @ObservedObject var game: MathMazeGame
     
     var body: some View {
         VStack(spacing: 15) {
@@ -157,43 +233,86 @@ struct NumberInputView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            HStack(spacing: 12) {
-                // Clear button
-                Button(action: {
-                    if let selected = game.selectedPosition {
-                        game.setValue(nil, at: selected)
-                    }
-                }) {
-                    Text("Clear")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(width: 50, height: 50)
-                        .background(game.selectedPosition != nil ? Color.red : Color.gray)
-                        .cornerRadius(8)
-                }
-                .disabled(game.selectedPosition == nil)
-                
-                // Number buttons
+            #if os(macOS)
+            // macOS layout - always use grid layout for better appearance
+            let columns = game.size <= 5 ? game.size + 1 : (game.size + 1) / 2 + 1
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(60), spacing: 10), count: columns), spacing: 10) {
+                clearButton
                 ForEach(1...game.size, id: \.self) { number in
-                    Button(action: {
-                        if let selected = game.selectedPosition {
-                            game.setValue(number, at: selected)
-                        }
-                    }) {
-                        Text("\(number)")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 50, height: 50)
-                            .background(buttonColor(for: number))
-                            .cornerRadius(8)
-                    }
-                    .disabled(!canEnterNumber(number))
+                    numberButton(for: number)
                 }
             }
+            #else
+            // iOS layout - responsive based on size
+            if game.size <= 5 {
+                // Single row layout for smaller grids
+                HStack(spacing: 12) {
+                    clearButton
+                    ForEach(1...game.size, id: \.self) { number in
+                        numberButton(for: number)
+                    }
+                }
+            } else {
+                // Two row layout for larger grids (6x6, 7x7, 8x8, 9x9)
+                VStack(spacing: 12) {
+                    // First row: Clear button + half the numbers
+                    HStack(spacing: 12) {
+                        clearButton
+                        ForEach(1...(game.size/2), id: \.self) { number in
+                            numberButton(for: number)
+                        }
+                    }
+                    // Second row: Remaining numbers
+                    HStack(spacing: 12) {
+                        ForEach((game.size/2 + 1)...game.size, id: \.self) { number in
+                            numberButton(for: number)
+                        }
+                    }
+                }
+            }
+            #endif
         }
         .padding(.horizontal)
+    }
+    
+    private var clearButton: some View {
+        Button(action: {
+            if let selected = game.selectedPosition {
+                game.setValue(nil, at: selected)
+            }
+        }) {
+            Rectangle()
+                .fill(Color.clear)
+                #if os(macOS)
+                .frame(width: 60, height: 60)
+                #else
+                .frame(width: 50, height: 50)
+                #endif
+                .background(game.selectedPosition != nil ? Color.red : Color.gray)
+                .cornerRadius(8)
+        }
+        .disabled(game.selectedPosition == nil)
+    }
+    
+    private func numberButton(for number: Int) -> some View {
+        Button(action: {
+            if let selected = game.selectedPosition {
+                game.setValue(number, at: selected)
+            }
+        }) {
+            Text("\(number)")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                #if os(macOS)
+                .frame(width: 60, height: 60)
+                #else
+                .frame(width: 50, height: 50)
+                #endif
+                .background(buttonColor(for: number))
+                .cornerRadius(8)
+        }
+        .disabled(!canEnterNumber(number))
     }
     
     private func canEnterNumber(_ number: Int) -> Bool {
@@ -213,8 +332,8 @@ struct NumberInputView: View {
 }
 
 #Preview {
-    KenKenGameView(
-        game: KenKenGame(size: 4),
+    MathMazeGameView(
+        game: MathMazeGame(size: 4),
         onNewGame: { }
     )
 }

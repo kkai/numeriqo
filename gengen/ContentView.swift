@@ -10,9 +10,39 @@ import SwiftUI
 struct ContentView: View {
     @State private var gameState: GameState = .sizeSelection
     @State private var selectedSize: Int = 4
-    @State private var kenkenGame: KenKenGame?
+    @State private var mathMazeGame: MathMazeGame?
     
     var body: some View {
+        #if os(macOS)
+        // macOS-specific layout without NavigationView
+        VStack {
+            Text("MathMaze")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top)
+            
+            Group {
+                switch gameState {
+                case .sizeSelection:
+                    SizeSelectionView(
+                        selectedSize: $selectedSize,
+                        onStartGame: startGame
+                    )
+                case .playing:
+                    if let game = mathMazeGame {
+                        MathMazeGameView(
+                            game: game,
+                            onNewGame: { gameState = .sizeSelection }
+                        )
+                    }
+                }
+            }
+            .frame(maxWidth: 800)
+            .frame(maxHeight: .infinity)
+        }
+        .frame(minWidth: 600, minHeight: 700)
+        #else
+        // iOS/iPadOS layout with NavigationView
         NavigationView {
             Group {
                 switch gameState {
@@ -22,20 +52,21 @@ struct ContentView: View {
                         onStartGame: startGame
                     )
                 case .playing:
-                    if let game = kenkenGame {
-                        KenKenGameView(
+                    if let game = mathMazeGame {
+                        MathMazeGameView(
                             game: game,
                             onNewGame: { gameState = .sizeSelection }
                         )
                     }
                 }
             }
-            .navigationTitle("KenKen")
+            .navigationTitle("MathMaze")
         }
+        #endif
     }
     
     private func startGame() {
-        kenkenGame = KenKenGame(size: selectedSize)
+        mathMazeGame = MathMazeGame(size: selectedSize)
         gameState = .playing
     }
 }
@@ -49,7 +80,7 @@ struct SizeSelectionView: View {
     @Binding var selectedSize: Int
     let onStartGame: () -> Void
     
-    private let availableSizes = [3, 4, 5, 6]
+    private let availableSizes = [3, 4, 5, 6, 7, 8, 9]
     
     var body: some View {
         VStack(spacing: 30) {
@@ -57,7 +88,7 @@ struct SizeSelectionView: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 20) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
                 ForEach(availableSizes, id: \.self) { size in
                     Button(action: {
                         selectedSize = size
@@ -101,6 +132,9 @@ struct SizeSelectionView: View {
         case 4: return "Medium"
         case 5: return "Hard"
         case 6: return "Expert"
+        case 7: return "Master"
+        case 8: return "Grand Master"
+        case 9: return "Legend"
         default: return ""
         }
     }

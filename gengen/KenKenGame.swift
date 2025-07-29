@@ -1,5 +1,5 @@
 //
-//  KenKenGame.swift
+//  MathMazeGame.swift
 //  gengen
 //
 //  Created by kai on 27.07.25.
@@ -64,7 +64,7 @@ struct Cage: Identifiable, Hashable {
     }
 }
 
-class KenKenGame: ObservableObject {
+class MathMazeGame: ObservableObject {
     @Published var grid: [[Int?]]
     @Published var cages: [Cage]
     @Published var isCompleted: Bool = false
@@ -76,7 +76,7 @@ class KenKenGame: ObservableObject {
     init(size: Int) {
         self.size = size
         self.grid = Array(repeating: Array(repeating: nil, count: size), count: size)
-        self.solution = KenKenGame.generateLatinSquare(size: size)
+        self.solution = MathMazeGame.generateLatinSquare(size: size)
         self.cages = []
         generatePuzzle()
     }
@@ -158,7 +158,25 @@ class KenKenGame: ObservableObject {
     private func generatePuzzle() {
         var usedPositions: Set<Position> = []
         var generatedCages: [Cage] = []
-        let cageColors: [Color] = [.red, .blue, .green, .orange, .purple, .pink, .yellow, .cyan, .mint, .indigo]
+        
+        // Create grayscale colors - different shades of gray
+        let grayscaleShades: [Color] = [
+            Color.gray.opacity(0.1),
+            Color.gray.opacity(0.2),
+            Color.gray.opacity(0.3),
+            Color.gray.opacity(0.4),
+            Color.gray.opacity(0.5),
+            Color.gray.opacity(0.15),
+            Color.gray.opacity(0.25),
+            Color.gray.opacity(0.35),
+            Color.gray.opacity(0.45),
+            Color.black.opacity(0.1),
+            Color.black.opacity(0.15),
+            Color.black.opacity(0.2),
+            Color.black.opacity(0.25),
+            Color.black.opacity(0.3),
+            Color.black.opacity(0.35)
+        ]
         var colorIndex = 0
         
         while usedPositions.count < size * size {
@@ -195,7 +213,7 @@ class KenKenGame: ObservableObject {
                 positions: cagePositions,
                 operation: operation,
                 target: target,
-                color: cageColors[colorIndex % cageColors.count].opacity(0.3)
+                color: grayscaleShades[colorIndex % grayscaleShades.count]
             )
             
             generatedCages.append(cage)
