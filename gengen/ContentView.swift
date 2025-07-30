@@ -41,6 +41,7 @@ struct ContentView: View {
             .frame(maxHeight: .infinity)
         }
         .frame(minWidth: 600, minHeight: 700)
+        .background(Color.white)
         #else
         // iOS/iPadOS layout with NavigationView
         NavigationView {
@@ -103,10 +104,13 @@ struct SizeSelectionView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 80)
-                        .background(selectedSize == size ? Color.accentColor : Color.gray.opacity(0.2))
+                        .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
                         .foregroundColor(selectedSize == size ? .white : .primary)
                         .cornerRadius(12)
                     }
+                    #if os(macOS)
+                    .buttonStyle(.plain)
+                    #endif
                 }
             }
             .padding(.horizontal)
@@ -119,9 +123,12 @@ struct SizeSelectionView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(Color.accentColor)
+            .background(Color.blue)
             .cornerRadius(12)
             .padding(.horizontal)
+            #if os(macOS)
+            .buttonStyle(.plain)
+            #endif
         }
         .padding()
     }

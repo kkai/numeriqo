@@ -40,10 +40,14 @@ struct MathMazeGameView: View {
             .background(Color.blue)
             .cornerRadius(8)
             .padding(.horizontal)
+            #if os(macOS)
+            .buttonStyle(.plain)
+            #endif
         }
         #if os(macOS)
         .frame(maxWidth: 600)
         .padding()
+        .background(Color.white)
         #endif
         .alert("Congratulations!", isPresented: $game.isCompleted) {
             Button("New Game", action: onNewGame)
@@ -292,6 +296,9 @@ struct NumberInputView: View {
                 .cornerRadius(8)
         }
         .disabled(game.selectedPosition == nil)
+        #if os(macOS)
+        .buttonStyle(.plain)
+        #endif
     }
     
     private func numberButton(for number: Int) -> some View {
@@ -313,6 +320,9 @@ struct NumberInputView: View {
                 .cornerRadius(8)
         }
         .disabled(!canEnterNumber(number))
+        #if os(macOS)
+        .buttonStyle(.plain)
+        #endif
     }
     
     private func canEnterNumber(_ number: Int) -> Bool {
