@@ -16,7 +16,7 @@ struct ContentView: View {
         #if os(macOS)
         // macOS-specific layout without NavigationView
         VStack {
-            Text("MathMaze")
+            Text("Numeriqo")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.top)
@@ -61,7 +61,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("MathMaze")
+            .navigationTitle("Numeriqo")
         }
         #endif
     }

@@ -4,32 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Swift/SwiftUI iOS/macOS application called "gengen" - a MathMaze puzzle game supporting iPhone, iPad, Mac, and Apple Vision Pro. The app allows users to play MathMaze puzzles of varying difficulty levels (3x3 to 9x9 grids) with dynamically generated cages and mathematical operations.
+This is a Swift/SwiftUI iOS/macOS application called "Numeriqo" - a MathMaze puzzle game supporting iPhone, iPad, Mac, and Apple Vision Pro. The app allows users to play MathMaze puzzles of varying difficulty levels (3x3 to 9x9 grids) with dynamically generated cages and mathematical operations.
 
 ## Development Commands
 
 ### Building
 ```bash
 # Build the project (Debug configuration)
-xcodebuild -project gengen.xcodeproj -scheme gengen -configuration Debug build
+xcodebuild -project Numeriqo.xcodeproj -scheme Numeriqo -configuration Debug build
 
 # Build for release
-xcodebuild -project gengen.xcodeproj -scheme gengen -configuration Release build
+xcodebuild -project Numeriqo.xcodeproj -scheme Numeriqo -configuration Release build
 
 # Build and run in simulator
-xcodebuild -project gengen.xcodeproj -scheme gengen -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build
+xcodebuild -project Numeriqo.xcodeproj -scheme Numeriqo -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build
 
 # Build for macOS
-xcodebuild -project gengen.xcodeproj -scheme gengen -destination 'platform=macOS' build
+xcodebuild -project Numeriqo.xcodeproj -scheme Numeriqo -destination 'platform=macOS' build
 ```
 
 ### Testing
 ```bash
 # Run tests
-xcodebuild test -project gengen.xcodeproj -scheme gengen -destination 'platform=iOS Simulator,name=iPhone 15 Pro'
+xcodebuild test -project Numeriqo.xcodeproj -scheme Numeriqo -destination 'platform=iOS Simulator,name=iPhone 15 Pro'
 
 # Run tests on macOS
-xcodebuild test -project gengen.xcodeproj -scheme gengen -destination 'platform=macOS'
+xcodebuild test -project Numeriqo.xcodeproj -scheme Numeriqo -destination 'platform=macOS'
 ```
 
 ### Running
@@ -38,7 +38,7 @@ Open the project in Xcode and use Cmd+R to run, or use xcodebuild with appropria
 ## Architecture
 
 ### Core Components
-- **App Entry Point**: `gengenApp.swift` - Main app struct with WindowGroup scene
+- **App Entry Point**: `NumeriqoApp.swift` - Main app struct with WindowGroup scene
 - **Main View**: `ContentView.swift` - Navigation between size selection and game play, manages game state
 - **Game Logic**: `KenKenGame.swift` - Core game logic, puzzle generation, validation, and Latin square generation
 - **Game UI**: `KenKenGameView.swift` - Game interface with grid, cage backgrounds, number picker, and controls
@@ -60,7 +60,7 @@ Open the project in Xcode and use Cmd+R to run, or use xcodebuild with appropria
 
 - **Target Platforms**: iOS 18.5+, macOS 15.5+, visionOS 2.5+
 - **Swift Version**: 5.0
-- **Bundle ID**: de.kaikunze.gengen
+- **Bundle ID**: de.kaikunze.numeriqo
 - **Development Team**: 8H42EZRCCP
 - **Entitlements**: App sandbox with read-only file access
 - **UI Framework**: SwiftUI with ObservableObject pattern for state management
