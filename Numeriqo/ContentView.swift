@@ -95,16 +95,33 @@ struct SizeSelectionView: View {
                     Button(action: {
                         selectedSize = size
                     }) {
-                        VStack {
+                        VStack(spacing: 4) {
                             Text("\(size)×\(size)")
                                 .font(.title2)
                                 .fontWeight(.semibold)
                             Text(difficultyText(for: size))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                            
+                            // Best time display
+                            if let bestTime = BestTimesManager.shared.getBestTime(for: size) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "trophy.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(selectedSize == size ? .yellow : .orange)
+                                    Text(BestTimesManager.formatTime(bestTime))
+                                        .font(.caption2)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(selectedSize == size ? .white : .primary)
+                                }
+                            } else {
+                                Text("No record")
+                                    .font(.caption2)
+                                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : .secondary)
+                            }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 80)
+                        .frame(height: 100)
                         .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
                         .foregroundColor(selectedSize == size ? .white : .primary)
                         .cornerRadius(12)

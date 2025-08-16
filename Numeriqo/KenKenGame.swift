@@ -69,9 +69,12 @@ class MathMazeGame: ObservableObject {
     @Published var cages: [Cage]
     @Published var isCompleted: Bool = false
     @Published var selectedPosition: Position?
+    @Published var elapsedTime: TimeInterval = 0
+    @Published var startTime: Date?
     
     let size: Int
     private let solution: [[Int]]
+    private var timer: Timer?
     
     init(size: Int) {
         self.size = size
@@ -79,6 +82,11 @@ class MathMazeGame: ObservableObject {
         self.solution = MathMazeGame.generateLatinSquare(size: size)
         self.cages = []
         generatePuzzle()
+        startTimer()
+    }
+    
+    deinit {
+        stopTimer()
     }
     
     func setValue(_ value: Int?, at position: Position) {
@@ -127,7 +135,25 @@ class MathMazeGame: ObservableObject {
         // Check all constraints
         if isValidSolution() {
             isCompleted = true
+            stopTimer()
+            // Save best time if applicable
+            if let completionTime = elapsedTime as TimeInterval? {
+                BestTimesManager.shared.updateBestTime(for: size, time: completionTime)
+            }
         }
+    }
+    
+    private func startTimer() {
+        startTime = Date()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, let startTime = self.startTime else { return }
+            self.elapsedTime = Date().timeIntervalSince(startTime)
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
     
     private func isValidSolution() -> Bool {

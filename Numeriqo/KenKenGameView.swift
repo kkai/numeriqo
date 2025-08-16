@@ -10,9 +10,22 @@ import SwiftUI
 struct MathMazeGameView: View {
     @ObservedObject var game: MathMazeGame
     let onNewGame: () -> Void
+    @State private var showingCompletionAlert = false
+    @State private var completionMessage = ""
     
     var body: some View {
         VStack(spacing: 20) {
+            // Timer display
+            HStack {
+                Image(systemName: "timer")
+                    .foregroundColor(.secondary)
+                Text(BestTimesManager.formatTime(game.elapsedTime))
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal)
+            
             // Game grid
             GameGridView(
                 game: game,
@@ -49,11 +62,28 @@ struct MathMazeGameView: View {
         .padding()
         .background(Color.white)
         #endif
-        .alert("Congratulations!", isPresented: $game.isCompleted) {
+        .onChange(of: game.isCompleted) { isCompleted in
+            if isCompleted {
+                let time = game.elapsedTime
+                let formattedTime = BestTimesManager.formatTime(time)
+                let isNewRecord = BestTimesManager.shared.isNewBestTime(for: game.size, time: time)
+                
+                if isNewRecord {
+                    completionMessage = "You solved the puzzle in \(formattedTime)!\n🎉 New Record!"
+                } else if let bestTime = BestTimesManager.shared.getBestTime(for: game.size) {
+                    let formattedBest = BestTimesManager.formatTime(bestTime)
+                    completionMessage = "You solved the puzzle in \(formattedTime)!\nBest time: \(formattedBest)"
+                } else {
+                    completionMessage = "You solved the puzzle in \(formattedTime)!"
+                }
+                showingCompletionAlert = true
+            }
+        }
+        .alert("Congratulations!", isPresented: $showingCompletionAlert) {
             Button("New Game", action: onNewGame)
             Button("OK") { }
         } message: {
-            Text("You solved the puzzle!")
+            Text(completionMessage)
         }
     }
 }
