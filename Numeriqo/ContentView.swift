@@ -63,6 +63,7 @@ struct ContentView: View {
             }
             .navigationTitle("Numeriqo")
         }
+        .navigationViewStyle(StackNavigationViewStyle())
         #endif
     }
     
