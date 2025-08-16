@@ -50,7 +50,7 @@
 /* Begin PBXNativeTarget section */
 		2AC24A592E35D8C000111972 /* Numeriqo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2AC24A662E35D8C100111972 /* Build configuration list for PBXNativeTarget "MathMaze" */;
+			buildConfigurationList = 2AC24A662E35D8C100111972 /* Build configuration list for PBXNativeTarget "Numeriqo" */;
 			buildPhases = (
 				2AC24A562E35D8C000111972 /* Sources */,
 				2AC24A572E35D8C000111972 /* Frameworks */,
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2AC24A552E35D8C000111972 /* Build configuration list for PBXProject "MathMaze" */;
+			buildConfigurationList = 2AC24A552E35D8C000111972 /* Build configuration list for PBXProject "Numeriqo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -253,6 +253,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Numeriqo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.puzzle-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -292,6 +294,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Numeriqo;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.puzzle-games";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -322,7 +326,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2AC24A552E35D8C000111972 /* Build configuration list for PBXProject "MathMaze" */ = {
+		2AC24A552E35D8C000111972 /* Build configuration list for PBXProject "Numeriqo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2AC24A642E35D8C100111972 /* Debug */,
@@ -331,7 +335,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2AC24A662E35D8C100111972 /* Build configuration list for PBXNativeTarget "MathMaze" */ = {
+		2AC24A662E35D8C100111972 /* Build configuration list for PBXNativeTarget "Numeriqo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2AC24A672E35D8C100111972 /* Debug */,
