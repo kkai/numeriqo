@@ -16,57 +16,49 @@ struct MathMazeGameView: View {
     var body: some View {
         Group {
             #if os(visionOS)
-            // Vision Pro: Optimized layout with timer repositioned
-            VStack(spacing: 30) {
-                // Top section: Timer and New Game button
-                HStack {
-                    // Timer display (moved to top left)
-                    HStack {
-                        Image(systemName: "timer")
-                            .foregroundColor(.secondary)
-                            .font(.title2)
-                        Text(BestTimesManager.formatTime(game.elapsedTime))
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
+            // Vision Pro: Optimized layout with all controls on the right
+            HStack(alignment: .center, spacing: 80) {
+                // Left side: Just the game grid
+                GameGridView(
+                    game: game,
+                    onCellTap: { position in
+                        game.selectedPosition = position
                     }
-                    
-                    Spacer()
-                    
-                    // New Game button (moved to top right for accessibility)
+                )
+                .frame(width: 650, height: 650)  // Reduced to prevent bottom cutoff
+                
+                // Right side: All controls (New Game, Timer, Number input)
+                VStack(spacing: 30) {
+                    // New Game button at top
                     Button("New Game") {
                         onNewGame()
                     }
                     .font(.title2)
                     .fontWeight(.semibold)
-                    .frame(width: 180, height: 50)
+                    .frame(width: 200, height: 55)
                     .buttonStyle(.borderedProminent)
-                }
-                .padding(.horizontal, 60)
-                
-                // Main content: Game grid and controls side by side
-                HStack(alignment: .center, spacing: 60) {
-                    // Left side: Game grid (centered and properly sized)
-                    GameGridView(
-                        game: game,
-                        onCellTap: { position in
-                            game.selectedPosition = position
-                        }
-                    )
-                    .frame(width: 500, height: 500)
                     
-                    // Right side: Number input controls (aligned with grid)
-                    VStack(spacing: 25) {
-                        Text("Select Number")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        VisionProNumberInputView(game: game)
+                    // Timer display
+                    HStack {
+                        Image(systemName: "timer")
+                            .foregroundColor(.secondary)
+                            .font(.title)
+                        Text(BestTimesManager.formatTime(game.elapsedTime))
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
                     }
-                    .frame(width: 240)
+                    .padding(.bottom, 5)
+                    
+                    Text("Select Number")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    VisionProNumberInputView(game: game)
                 }
+                .frame(width: 300)
             }
-            .frame(maxWidth: 1200, maxHeight: 800)
+            .frame(maxWidth: 1300, maxHeight: 900)
             .padding(40)
             #else
             // Other platforms: Vertical layout
@@ -227,25 +219,26 @@ struct GameGridView: View {
     
     private func optimalCellSize(for boardSize: Int, in containerSize: CGSize) -> CGFloat {
         #if os(visionOS)
-        // Vision Pro: Larger sizes for much better readability
-        let maxSize = min(containerSize.width, containerSize.height) - 60 // padding
+        // Vision Pro: Optimized sizes for maximum readability
+        let maxSize = min(containerSize.width, containerSize.height) - 40 // reduced padding for larger cells
         let calculatedSize = maxSize / CGFloat(boardSize)
         
+        // Increased cell sizes for better visibility in visionOS
         switch boardSize {
         case 3:
-            return min(calculatedSize, 140)
+            return min(calculatedSize, 200)  // Increased from 140
         case 4:
-            return min(calculatedSize, 120)
+            return min(calculatedSize, 160)  // Increased from 120
         case 5:
-            return min(calculatedSize, 100)
+            return min(calculatedSize, 130)  // Increased from 100
         case 6:
-            return min(calculatedSize, 85)
+            return min(calculatedSize, 110)  // Increased from 85
         case 7:
-            return min(calculatedSize, 75)
+            return min(calculatedSize, 95)   // Increased from 75
         case 8:
-            return min(calculatedSize, 65)
+            return min(calculatedSize, 85)   // Increased from 65
         case 9:
-            return min(calculatedSize, 60)
+            return min(calculatedSize, 75)   // Increased from 60
         default:
             return calculatedSize
         }
@@ -290,15 +283,19 @@ struct CageLabelView: View {
     
     private func optimalLabelFont(for cellSize: CGFloat) -> Font {
         #if os(visionOS)
-        // Vision Pro: Larger fonts for much better readability
-        if cellSize >= 100 {
-            return .body
+        // Vision Pro: Enhanced fonts for optimal readability
+        if cellSize >= 150 {
+            return .title3
+        } else if cellSize >= 120 {
+            return .title3
+        } else if cellSize >= 100 {
+            return .headline
         } else if cellSize >= 80 {
-            return .callout
+            return .body
         } else if cellSize >= 60 {
-            return .caption
+            return .callout
         } else {
-            return .caption2
+            return .caption
         }
         #else
         // Other platforms: Use existing logic
@@ -347,17 +344,21 @@ struct CellView: View {
     
     private func optimalNumberFont(for cellSize: CGFloat) -> Font {
         #if os(visionOS)
-        // Vision Pro: Much larger number fonts for better readability
-        if cellSize >= 120 {
-            return .system(size: 48, weight: .semibold)
+        // Vision Pro: Optimized number fonts for maximum clarity
+        if cellSize >= 180 {
+            return .system(size: 72, weight: .bold)
+        } else if cellSize >= 150 {
+            return .system(size: 60, weight: .bold)
+        } else if cellSize >= 120 {
+            return .system(size: 52, weight: .bold)
         } else if cellSize >= 100 {
-            return .system(size: 40, weight: .semibold)
+            return .system(size: 44, weight: .semibold)
         } else if cellSize >= 80 {
-            return .system(size: 32, weight: .semibold)
+            return .system(size: 36, weight: .semibold)
         } else if cellSize >= 60 {
-            return .system(size: 24, weight: .semibold)
+            return .system(size: 28, weight: .semibold)
         } else {
-            return .system(size: 20, weight: .semibold)
+            return .system(size: 24, weight: .semibold)
         }
         #else
         // Other platforms: Use existing logic
@@ -597,27 +598,27 @@ struct VisionProNumberInputView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Clear button at top
+            // Clear button at top with enhanced size
             Button(action: {
                 if let selected = game.selectedPosition {
                     game.setValue(nil, at: selected)
                 }
             }) {
                 Text("Clear")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .font(.title)
+                    .fontWeight(.bold)
             }
-            .frame(width: 140, height: 50)
+            .frame(width: 180, height: 60)
             .buttonStyle(.borderedProminent)
             .disabled(game.selectedPosition == nil)
             .tint(.red)
             
-            // Number buttons in optimized grid layout
+            // Number buttons in optimized grid layout with larger sizes
             LazyVGrid(columns: [
-                GridItem(.fixed(70)),
-                GridItem(.fixed(70)),
-                GridItem(.fixed(70))
-            ], spacing: 18) {
+                GridItem(.fixed(85)),
+                GridItem(.fixed(85)),
+                GridItem(.fixed(85))
+            ], spacing: 20) {
                 ForEach(1...game.size, id: \.self) { number in
                     Button(action: {
                         if let selected = game.selectedPosition {
@@ -625,10 +626,10 @@ struct VisionProNumberInputView: View {
                         }
                     }) {
                         Text("\(number)")
-                            .font(.title)
+                            .font(.system(size: 36, weight: .bold))
                             .fontWeight(.bold)
                     }
-                    .frame(width: 70, height: 70)
+                    .frame(width: 85, height: 85)
                     .buttonStyle(.borderedProminent)
                     .disabled(!canEnterNumber(number))
                     .tint(canEnterNumber(number) ? .blue : .gray)
