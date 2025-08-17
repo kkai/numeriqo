@@ -87,7 +87,11 @@ struct SizeSelectionView: View {
     var body: some View {
         VStack(spacing: 30) {
             Text("Choose Puzzle Size")
+                #if os(visionOS)
+                .font(.system(size: 48, weight: .bold))
+                #else
                 .font(.largeTitle)
+                #endif
                 .fontWeight(.bold)
             
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
@@ -97,37 +101,67 @@ struct SizeSelectionView: View {
                     }) {
                         VStack(spacing: 4) {
                             Text("\(size)×\(size)")
+                                #if os(visionOS)
+                                .font(.title)
+                                #else
                                 .font(.title2)
+                                #endif
                                 .fontWeight(.semibold)
                             Text(difficultyText(for: size))
+                                #if os(visionOS)
+                                .font(.headline)
+                                #else
                                 .font(.caption)
+                                #endif
                                 .foregroundColor(.secondary)
                             
                             // Best time display
                             if let bestTime = BestTimesManager.shared.getBestTime(for: size) {
                                 HStack(spacing: 4) {
                                     Image(systemName: "trophy.fill")
+                                        #if os(visionOS)
+                                        .font(.headline)
+                                        #else
                                         .font(.caption2)
+                                        #endif
                                         .foregroundColor(selectedSize == size ? .yellow : .orange)
                                     Text(BestTimesManager.formatTime(bestTime))
+                                        #if os(visionOS)
+                                        .font(.headline)
+                                        #else
                                         .font(.caption2)
+                                        #endif
                                         .fontWeight(.medium)
                                         .foregroundColor(selectedSize == size ? .white : .primary)
                                 }
                             } else {
                                 Text("No record")
+                                    #if os(visionOS)
+                                    .font(.headline)
+                                    #else
                                     .font(.caption2)
+                                    #endif
                                     .foregroundColor(selectedSize == size ? .white.opacity(0.7) : .secondary)
                             }
                         }
                         .frame(maxWidth: .infinity)
+                        #if os(visionOS)
+                        .frame(height: 140)
+                        #else
                         .frame(height: 100)
+                        #endif
                         .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
                         .foregroundColor(selectedSize == size ? .white : .primary)
+                        #if os(visionOS)
+                        .cornerRadius(20)
+                        #else
                         .cornerRadius(12)
+                        #endif
                     }
                     #if os(macOS)
                     .buttonStyle(.plain)
+                    #elseif os(visionOS)
+                    .buttonStyle(.borderedProminent)
                     #endif
                 }
             }
@@ -136,16 +170,30 @@ struct SizeSelectionView: View {
             Button("Start Game") {
                 onStartGame()
             }
+            #if os(visionOS)
+            .font(.title)
+            #else
             .font(.title2)
+            #endif
             .fontWeight(.semibold)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
+            #if os(visionOS)
+            .frame(height: 70)
+            #else
             .frame(height: 50)
+            #endif
             .background(Color.blue)
+            #if os(visionOS)
+            .cornerRadius(35)
+            #else
             .cornerRadius(12)
+            #endif
             .padding(.horizontal)
             #if os(macOS)
             .buttonStyle(.plain)
+            #elseif os(visionOS)
+            .buttonStyle(.borderedProminent)
             #endif
         }
         .padding()
