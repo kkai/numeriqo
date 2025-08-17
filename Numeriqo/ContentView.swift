@@ -85,118 +85,137 @@ struct SizeSelectionView: View {
     private let availableSizes = [3, 4, 5, 6, 7, 8, 9]
     
     var body: some View {
-        VStack(spacing: 30) {
-            Text("Choose Puzzle Size")
-                #if os(visionOS)
-                .font(.system(size: 48, weight: .bold))
-                #else
-                .font(.largeTitle)
-                #endif
-                .fontWeight(.bold)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
-                ForEach(availableSizes, id: \.self) { size in
-                    Button(action: {
-                        selectedSize = size
-                    }) {
-                        VStack(spacing: 4) {
-                            Text("\(size)×\(size)")
-                                #if os(visionOS)
-                                .font(.title)
-                                #else
-                                .font(.title2)
-                                #endif
-                                .fontWeight(.semibold)
-                            Text(difficultyText(for: size))
-                                #if os(visionOS)
-                                .font(.headline)
-                                #else
-                                .font(.caption)
-                                #endif
-                                .foregroundColor(.secondary)
-                            
-                            // Best time display
-                            if let bestTime = BestTimesManager.shared.getBestTime(for: size) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "trophy.fill")
-                                        #if os(visionOS)
-                                        .font(.headline)
-                                        #else
-                                        .font(.caption2)
-                                        #endif
-                                        .foregroundColor(selectedSize == size ? .yellow : .orange)
-                                    Text(BestTimesManager.formatTime(bestTime))
-                                        #if os(visionOS)
-                                        .font(.headline)
-                                        #else
-                                        .font(.caption2)
-                                        #endif
-                                        .fontWeight(.medium)
-                                        .foregroundColor(selectedSize == size ? .white : .primary)
-                                }
-                            } else {
-                                Text("No record")
-                                    #if os(visionOS)
-                                    .font(.headline)
-                                    #else
-                                    .font(.caption2)
-                                    #endif
-                                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : .secondary)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        #if os(visionOS)
-                        .frame(height: 140)
-                        #else
-                        .frame(height: 100)
-                        #endif
-                        .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
-                        .foregroundColor(selectedSize == size ? .white : .primary)
-                        #if os(visionOS)
-                        .cornerRadius(20)
-                        #else
-                        .cornerRadius(12)
-                        #endif
-                    }
-                    #if os(macOS)
-                    .buttonStyle(.plain)
-                    #elseif os(visionOS)
-                    .buttonStyle(.borderedProminent)
-                    #endif
-                }
-            }
-            .padding(.horizontal)
-            
-            Button("Start Game") {
-                onStartGame()
-            }
+        VStack(spacing: 20) {
+            titleView
+            sizeSelectionGrid
+            startGameButton
+        }
+        .padding()
+        #if os(visionOS)
+        .padding(.bottom)
+        #endif
+    }
+    
+    private var titleView: some View {
+        Text("Choose Puzzle Size")
             #if os(visionOS)
-            .font(.title)
+            .font(.system(size: 48, weight: .bold))
             #else
-            .font(.title2)
+            .font(.largeTitle)
             #endif
-            .fontWeight(.semibold)
-            .foregroundColor(.white)
+            .fontWeight(.bold)
+    }
+    
+    private var sizeSelectionGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 15) {
+            ForEach(availableSizes, id: \.self) { size in
+                sizeButton(for: size)
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    private func sizeButton(for size: Int) -> some View {
+        Button(action: {
+            selectedSize = size
+        }) {
+            VStack(spacing: 4) {
+                Text("\(size)×\(size)")
+                    #if os(visionOS)
+                    .font(.title)
+                    #else
+                    .font(.title2)
+                    #endif
+                    .fontWeight(.semibold)
+                Text(difficultyText(for: size))
+                    #if os(visionOS)
+                    .font(.headline)
+                    #else
+                    .font(.caption)
+                    #endif
+                    .foregroundColor(.secondary)
+                
+                bestTimeView(for: size)
+            }
             .frame(maxWidth: .infinity)
             #if os(visionOS)
-            .frame(height: 70)
+            .frame(height: 110)
             #else
-            .frame(height: 50)
+            .frame(height: 100)
             #endif
-            .background(Color.blue)
+            .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
+            .foregroundColor(selectedSize == size ? .white : .primary)
             #if os(visionOS)
-            .cornerRadius(35)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .contentShape(RoundedRectangle(cornerRadius: 20))
             #else
             .cornerRadius(12)
             #endif
-            .padding(.horizontal)
-            #if os(macOS)
-            .buttonStyle(.plain)
-            #elseif os(visionOS)
-            .buttonStyle(.borderedProminent)
-            #endif
         }
-        .padding()
+        #if os(macOS) || os(visionOS)
+        .buttonStyle(.plain)
+        #endif
+    }
+    
+    private func bestTimeView(for size: Int) -> some View {
+        Group {
+            if let bestTime = BestTimesManager.shared.getBestTime(for: size) {
+                HStack(spacing: 4) {
+                    Image(systemName: "trophy.fill")
+                        #if os(visionOS)
+                        .font(.headline)
+                        #else
+                        .font(.caption2)
+                        #endif
+                        .foregroundColor(selectedSize == size ? .yellow : .orange)
+                    Text(BestTimesManager.formatTime(bestTime))
+                        #if os(visionOS)
+                        .font(.headline)
+                        #else
+                        .font(.caption2)
+                        #endif
+                        .fontWeight(.medium)
+                        .foregroundColor(selectedSize == size ? .white : .primary)
+                }
+            } else {
+                Text("No record")
+                    #if os(visionOS)
+                    .font(.headline)
+                    #else
+                    .font(.caption2)
+                    #endif
+                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : .secondary)
+            }
+        }
+    }
+    
+    private var startGameButton: some View {
+        Button("Start Game") {
+            onStartGame()
+        }
+        #if os(visionOS)
+        .font(.title)
+        #else
+        .font(.title2)
+        #endif
+        .fontWeight(.semibold)
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        #if os(visionOS)
+        .frame(height: 70)
+        #else
+        .frame(height: 50)
+        #endif
+        .background(Color.blue)
+        #if os(visionOS)
+        .cornerRadius(35)
+        #else
+        .cornerRadius(12)
+        #endif
+        .padding(.horizontal)
+        #if os(macOS) || os(visionOS)
+        .buttonStyle(.plain)
+        #endif
     }
     
     private func difficultyText(for size: Int) -> String {
