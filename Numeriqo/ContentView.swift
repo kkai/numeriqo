@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+struct NoEffectButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
 struct ContentView: View {
     @State private var gameState: GameState = .sizeSelection
     @State private var selectedSize: Int = 4
@@ -152,8 +158,10 @@ struct SizeSelectionView: View {
             .cornerRadius(12)
             #endif
         }
-        #if os(macOS) || os(visionOS)
+        #if os(macOS)
         .buttonStyle(.plain)
+        #elseif os(visionOS)
+        .buttonStyle(NoEffectButtonStyle())
         #endif
     }
     
