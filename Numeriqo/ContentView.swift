@@ -22,10 +22,17 @@ struct ContentView: View {
         #if os(macOS)
         // macOS-specific layout without NavigationView
         VStack {
+            #if NUMERIQO_PRO
+            Text("Numeriqo Pro")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top)
+            #else
             Text("Numeriqo")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.top)
+            #endif
             
             Group {
                 switch gameState {
@@ -67,7 +74,11 @@ struct ContentView: View {
                     }
                 }
             }
+            #if NUMERIQO_PRO
+            .navigationTitle("Numeriqo Pro")
+            #else
             .navigationTitle("Numeriqo")
+            #endif
         }
         .navigationViewStyle(StackNavigationViewStyle())
         #endif
@@ -88,7 +99,11 @@ struct SizeSelectionView: View {
     @Binding var selectedSize: Int
     let onStartGame: () -> Void
     
+    #if NUMERIQO_PRO
     private let availableSizes = [3, 4, 5, 6, 7, 8, 9]
+    #else
+    private let availableSizes = [3, 4, 5, 6]
+    #endif
     
     var body: some View {
         VStack(spacing: 20) {
@@ -231,7 +246,12 @@ struct SizeSelectionView: View {
         case 3: return "Easy"
         case 4: return "Medium"
         case 5: return "Hard"
-        case 6: return "Expert"
+        case 6: 
+            #if NUMERIQO_PRO
+            return "Expert"
+            #else
+            return "Expert"
+            #endif
         case 7: return "Master"
         case 8: return "Grand Master"
         case 9: return "Legend"
