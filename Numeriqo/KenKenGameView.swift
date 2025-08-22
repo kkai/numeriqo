@@ -106,7 +106,7 @@ struct MathMazeGameView: View {
                 #endif
             }
             #if os(macOS)
-            .frame(maxWidth: 600)
+            .frame(maxWidth: 800)
             .padding()
             .background(Color.white)
             #endif
@@ -181,8 +181,43 @@ struct GameGridView: View {
                 }
                 .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
+            #elseif os(macOS)
+            // macOS: Calculate centering offset like visionOS
+            let gridTotalSize = CGFloat(game.size) * cellSize + CGFloat(game.size - 1)
+            let xOffset = (geometry.size.width - gridTotalSize) / 2
+            let yOffset = (geometry.size.height - gridTotalSize) / 2
+            
+            ZStack {
+                // Cage backgrounds
+                ForEach(game.cages) { cage in
+                    CageBackgroundView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
+                }
+                
+                // Cage labels
+                ForEach(game.cages) { cage in
+                    CageLabelView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
+                }
+                
+                // Grid cells - centered properly
+                VStack(spacing: 1) {
+                    ForEach(0..<game.size, id: \.self) { row in
+                        HStack(spacing: 1) {
+                            ForEach(0..<game.size, id: \.self) { col in
+                                CellView(
+                                    position: Position(row: row, col: col),
+                                    game: game,
+                                    cellSize: cellSize,
+                                    onTap: onCellTap
+                                )
+                                .frame(width: cellSize, height: cellSize)
+                            }
+                        }
+                    }
+                }
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            }
             #else
-            // Other platforms - use existing layout
+            // iOS/iPadOS - use existing layout
             ZStack {
                 // Cage backgrounds
                 ForEach(game.cages) { cage in
@@ -242,8 +277,31 @@ struct GameGridView: View {
         default:
             return calculatedSize
         }
+        #elseif os(macOS)
+        // macOS: Optimized sizes for better readability
+        let maxSize = min(containerSize.width, containerSize.height) - 20
+        let calculatedSize = maxSize / CGFloat(boardSize)
+        
+        switch boardSize {
+        case 3:
+            return min(calculatedSize, 180)
+        case 4:
+            return min(calculatedSize, 140)
+        case 5:
+            return min(calculatedSize, 110)
+        case 6:
+            return min(calculatedSize, 90)
+        case 7:
+            return min(calculatedSize, 80)
+        case 8:
+            return min(calculatedSize, 70)
+        case 9:
+            return min(calculatedSize, 62)
+        default:
+            return calculatedSize
+        }
         #else
-        // Other platforms: Use existing logic
+        // iOS/iPadOS: Use existing logic
         return min(containerSize.width, containerSize.height) / CGFloat(boardSize)
         #endif
     }
@@ -259,13 +317,13 @@ struct CageLabelView: View {
     var body: some View {
         // Cage label (operation and target)
         if let topLeft = cage.positions.min(by: { $0.row < $1.row || ($0.row == $1.row && $0.col < $1.col) }) {
-            #if os(visionOS)
+            #if os(visionOS) || os(macOS)
             Text("\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
                 .foregroundColor(.black)
                 .position(
-                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.35 + xOffset,
+                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.40 + xOffset,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15 + yOffset
                 )
             #else
@@ -274,7 +332,7 @@ struct CageLabelView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.black)
                 .position(
-                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.35,
+                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.50,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15
                 )
             #endif
@@ -297,8 +355,21 @@ struct CageLabelView: View {
         } else {
             return .caption
         }
+        #elseif os(macOS)
+        // macOS: Scaled fonts for better readability
+        if cellSize >= 120 {
+            return .headline
+        } else if cellSize >= 90 {
+            return .subheadline
+        } else if cellSize >= 70 {
+            return .caption
+        } else if cellSize >= 50 {
+            return .caption2
+        } else {
+            return .caption2
+        }
         #else
-        // Other platforms: Use existing logic
+        // iOS/iPadOS: Use existing logic
         return .caption2
         #endif
     }
@@ -360,8 +431,23 @@ struct CellView: View {
         } else {
             return .system(size: 24, weight: .semibold)
         }
+        #elseif os(macOS)
+        // macOS: Scaled number fonts for better readability
+        if cellSize >= 140 {
+            return .system(size: 48, weight: .semibold)
+        } else if cellSize >= 110 {
+            return .system(size: 40, weight: .semibold)
+        } else if cellSize >= 90 {
+            return .system(size: 32, weight: .semibold)
+        } else if cellSize >= 70 {
+            return .system(size: 26, weight: .semibold)
+        } else if cellSize >= 50 {
+            return .system(size: 20, weight: .semibold)
+        } else {
+            return .system(size: 18, weight: .semibold)
+        }
         #else
-        // Other platforms: Use existing logic
+        // iOS/iPadOS: Use existing logic
         return .title2
         #endif
     }
@@ -379,7 +465,7 @@ struct CageBackgroundView: View {
             // Background fill for entire cage as a single shape
             Path { path in
                 for position in cage.positions {
-                    #if os(visionOS)
+                    #if os(visionOS) || os(macOS)
                     let x = CGFloat(position.col) * (cellSize + 1) - 0.5 + xOffset
                     let y = CGFloat(position.row) * (cellSize + 1) - 0.5 + yOffset
                     #else
@@ -407,7 +493,7 @@ struct CageOutlineView: View {
         Path { path in
             // Draw border segments around the cage perimeter
             for position in cage.positions {
-                #if os(visionOS)
+                #if os(visionOS) || os(macOS)
                 let x = CGFloat(position.col) * (cellSize + 1) + xOffset
                 let y = CGFloat(position.row) * (cellSize + 1) + yOffset
                 #else
@@ -466,7 +552,7 @@ struct NumberInputView: View {
             #if os(macOS)
             // macOS layout - always use grid layout for better appearance
             let columns = game.size <= 5 ? game.size + 1 : (game.size + 1) / 2 + 1
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(60), spacing: 10), count: columns), spacing: 10) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(70), spacing: 10), count: columns), spacing: 10) {
                 clearButton
                 ForEach(1...game.size, id: \.self) { number in
                     numberButton(for: number)
@@ -523,7 +609,7 @@ struct NumberInputView: View {
             Rectangle()
                 .fill(Color.clear)
                 #if os(macOS)
-                .frame(width: 60, height: 60)
+                .frame(width: 70, height: 70)
                 #elseif os(visionOS)
                 .frame(width: 80, height: 80)
                 #else
@@ -557,7 +643,7 @@ struct NumberInputView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 #if os(macOS)
-                .frame(width: 60, height: 60)
+                .frame(width: 70, height: 70)
                 #elseif os(visionOS)
                 .frame(width: 80, height: 80)
                 #else

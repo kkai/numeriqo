@@ -50,10 +50,10 @@ struct ContentView: View {
                     }
                 }
             }
-            .frame(maxWidth: 800)
+            .frame(maxWidth: 1000)
             .frame(maxHeight: .infinity)
         }
-        .frame(minWidth: 600, minHeight: 700)
+        .frame(minWidth: 800, minHeight: 900)
         .background(Color.white)
         #else
         // iOS/iPadOS layout with NavigationView
