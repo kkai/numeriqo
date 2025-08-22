@@ -102,7 +102,7 @@ struct SizeSelectionView: View {
     #if NUMERIQO_PRO
     private let availableSizes = [3, 4, 5, 6, 7, 8, 9]
     #else
-    private let availableSizes = [3, 4, 5, 6]
+    private let availableSizes = [3, 4, 5]
     #endif
     
     var body: some View {
@@ -245,13 +245,13 @@ struct SizeSelectionView: View {
         switch size {
         case 3: return "Easy"
         case 4: return "Medium"
-        case 5: return "Hard"
-        case 6: 
+        case 5: 
             #if NUMERIQO_PRO
-            return "Expert"
+            return "Hard"
             #else
             return "Expert"
             #endif
+        case 6: return "Expert"
         case 7: return "Master"
         case 8: return "Grand Master"
         case 9: return "Legend"
