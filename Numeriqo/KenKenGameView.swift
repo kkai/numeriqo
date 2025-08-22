@@ -12,6 +12,9 @@ struct MathMazeGameView: View {
     let onNewGame: () -> Void
     @State private var showingCompletionAlert = false
     @State private var completionMessage = ""
+    #if os(iOS)
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
     
     var body: some View {
         Group {
@@ -135,6 +138,18 @@ struct MathMazeGameView: View {
         } message: {
             Text(completionMessage)
         }
+        #if os(iOS)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            switch newPhase {
+            case .active:
+                game.resumeTimer()
+            case .inactive, .background:
+                game.pauseTimer()
+            @unknown default:
+                break
+            }
+        }
+        #endif
     }
 }
 

@@ -75,6 +75,9 @@ class MathMazeGame: ObservableObject {
     let size: Int
     private let solution: [[Int]]
     private var timer: Timer?
+    private var accumulatedTime: TimeInterval = 0
+    private var sessionStartTime: Date?
+    private var isTimerRunning: Bool = false
     
     init(size: Int) {
         self.size = size
@@ -145,15 +148,46 @@ class MathMazeGame: ObservableObject {
     
     private func startTimer() {
         startTime = Date()
+        sessionStartTime = Date()
+        isTimerRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, let startTime = self.startTime else { return }
-            self.elapsedTime = Date().timeIntervalSince(startTime)
+            guard let self = self, let sessionStart = self.sessionStartTime else { return }
+            self.elapsedTime = self.accumulatedTime + Date().timeIntervalSince(sessionStart)
         }
     }
     
     private func stopTimer() {
+        if isTimerRunning, let sessionStart = sessionStartTime {
+            accumulatedTime += Date().timeIntervalSince(sessionStart)
+        }
         timer?.invalidate()
         timer = nil
+        isTimerRunning = false
+        sessionStartTime = nil
+    }
+    
+    func pauseTimer() {
+        guard isTimerRunning else { return }
+        
+        if let sessionStart = sessionStartTime {
+            accumulatedTime += Date().timeIntervalSince(sessionStart)
+        }
+        
+        timer?.invalidate()
+        timer = nil
+        isTimerRunning = false
+        sessionStartTime = nil
+    }
+    
+    func resumeTimer() {
+        guard !isTimerRunning && !isCompleted else { return }
+        
+        sessionStartTime = Date()
+        isTimerRunning = true
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, let sessionStart = self.sessionStartTime else { return }
+            self.elapsedTime = self.accumulatedTime + Date().timeIntervalSince(sessionStart)
+        }
     }
     
     private func isValidSolution() -> Bool {
