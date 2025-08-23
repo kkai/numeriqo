@@ -1,0 +1,7 @@
+Numeriqo combines number placement with arithmetic puzzles. You fill grids where each row and column contains unique numbers, while also solving math constraints within colored cages.
+
+The rules are straightforward. Place numbers 1 through the grid size in each row and column without repeating. Each colored cage shows a math operation and target number. The numbers you place in that cage must calculate to the target using the given operation.
+
+Grid sizes range from 3x3 to 5x5. Start small to understand the mechanics, then tackle larger grids as you improve. Every puzzle has one correct solution.
+
+The game tracks your completion times and works on iPhone, iPad, Mac, and Apple Vision Pro. The interface stays out of your way so you can focus on solving.

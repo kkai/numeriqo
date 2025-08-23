@@ -1,0 +1,7 @@
+Numeriqo Pro extends the core number puzzle concept to larger, more complex grids. You place numbers so each row and column contains unique values, while solving arithmetic constraints within colored cage regions.
+
+The mechanics remain the same across all sizes. Fill each row and column with numbers 1 through the grid size without duplicates. Each cage displays a math operation and target value. Your placed numbers must calculate correctly using that operation.
+
+This Pro version includes grid sizes from 3x3 up to 9x9. The larger grids demand more strategic thinking and longer solving sessions. Advanced players can test their skills on the challenging 7x7, 8x8, and 9x9 puzzles not available in the standard version.
+
+Completion times are tracked for each grid size. The game runs on all Apple platforms with clean interfaces designed for extended play sessions. Each puzzle guarantees exactly one solution through mathematical logic.

@@ -1,0 +1,1 @@
+Advanced number puzzle game with math cages. Fill grids with unique numbers per row and column while solving arithmetic constraints. Sizes 3x3 to 9x9.
