@@ -124,7 +124,70 @@ class MathMazeGame: ObservableObject {
             return false
         }
         
+        // Check cage constraints
+        if let affectedCage = findCage(containing: position) {
+            if !isValidCageState(cage: affectedCage, with: tempGrid) {
+                return false
+            }
+        }
+        
         return true
+    }
+    
+    private func findCage(containing position: Position) -> Cage? {
+        return cages.first { $0.contains(position: position) }
+    }
+    
+    private func isValidCageState(cage: Cage, with grid: [[Int?]]) -> Bool {
+        let values: [Int] = cage.positions.compactMap { pos in
+            guard pos.row < grid.count && pos.col < grid[pos.row].count else { return nil }
+            return grid[pos.row][pos.col]
+        }
+        
+        let emptyCount = cage.positions.count - values.count
+        
+        // If cage is complete, validate exactly
+        if emptyCount == 0 {
+            return cage.operation.calculate(values) == cage.target
+        }
+        
+        // If cage is incomplete, check if it's still solvable
+        return isCageStillSolvable(cage: cage, filledValues: values, emptyCount: emptyCount)
+    }
+    
+    private func isCageStillSolvable(cage: Cage, filledValues: [Int], emptyCount: Int) -> Bool {
+        // For single empty cell, check if any valid number can complete the cage
+        if emptyCount == 1 {
+            for candidate in 1...size {
+                var testValues = filledValues
+                testValues.append(candidate)
+                if cage.operation.calculate(testValues) == cage.target {
+                    return true
+                }
+            }
+            return false
+        }
+        
+        // For multiple empty cells, use more permissive validation
+        // This is a simplified check - more complex logic could be added later
+        switch cage.operation {
+        case .add:
+            let currentSum = filledValues.reduce(0, +)
+            let remainingSum = cage.target - currentSum
+            // Check if remaining sum is achievable with available numbers
+            return remainingSum >= emptyCount && remainingSum <= emptyCount * size
+        case .multiply:
+            let currentProduct = filledValues.reduce(1, *)
+            // Basic check: if current product already exceeds target, invalid
+            return currentProduct <= cage.target && cage.target % currentProduct == 0
+        case .subtract, .divide:
+            // For subtraction and division with multiple empty cells, 
+            // be more permissive during play
+            return emptyCount == 1 || filledValues.count <= 1
+        case .none:
+            // Single cell cages should be complete or have specific target
+            return emptyCount == 0 || (emptyCount == 1 && cage.target >= 1 && cage.target <= size)
+        }
     }
     
     private func checkCompletion() {
