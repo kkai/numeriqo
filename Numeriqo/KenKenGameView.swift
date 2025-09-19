@@ -111,7 +111,7 @@ struct MathMazeGameView: View {
             #if os(macOS)
             .frame(maxWidth: 800)
             .padding()
-            .background(Color.white)
+            .background(Color(NSColor.controlBackgroundColor))
             #endif
             #endif
         }
@@ -336,7 +336,7 @@ struct CageLabelView: View {
             Text("\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
-                .foregroundColor(.black)
+                .foregroundColor(.primary)
                 .position(
                     x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.40 + xOffset,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15 + yOffset
@@ -345,7 +345,7 @@ struct CageLabelView: View {
             Text("\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
-                .foregroundColor(.black)
+                .foregroundColor(.primary)
                 .position(
                     x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.50,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15
@@ -547,7 +547,7 @@ struct CageOutlineView: View {
                 }
             }
         }
-        .stroke(Color.black, lineWidth: 3)
+        .stroke(Color.primary.opacity(0.8), lineWidth: 3)
     }
 }
 
@@ -630,7 +630,7 @@ struct NumberInputView: View {
                 #else
                 .frame(width: 50, height: 50)
                 #endif
-                .background(game.selectedPosition != nil ? Color.red : Color.gray)
+                .background(game.selectedPosition != nil ? Color.red : Color(.systemGray4))
                 #if os(visionOS)
                 .cornerRadius(40)
                 #else
@@ -683,12 +683,12 @@ struct NumberInputView: View {
     }
     
     private func buttonColor(for number: Int) -> Color {
-        guard let selected = game.selectedPosition else { return Color.gray }
+        guard let selected = game.selectedPosition else { return Color(.systemGray4) }
         
         if game.isValidMove(number, at: selected) {
             return Color.blue
         } else {
-            return Color.gray
+            return Color(.systemGray4)
         }
     }
 }
@@ -747,7 +747,7 @@ struct VisionProNumberInputView: View {
 
 #Preview {
     MathMazeGameView(
-        game: MathMazeGame(size: 4),
+        game: MathMazeGame(size: 4, colorScheme: .light),
         onNewGame: { }
     )
 }

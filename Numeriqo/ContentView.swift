@@ -14,6 +14,7 @@ struct NoEffectButtonStyle: ButtonStyle {
 }
 
 struct ContentView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var gameState: GameState = .sizeSelection
     @State private var selectedSize: Int = 4
     @State private var mathMazeGame: MathMazeGame?
@@ -26,11 +27,13 @@ struct ContentView: View {
             Text("Numeriqo Pro")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
                 .padding(.top)
             #else
             Text("Numeriqo")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
                 .padding(.top)
             #endif
             
@@ -54,7 +57,11 @@ struct ContentView: View {
             .frame(maxHeight: .infinity)
         }
         .frame(minWidth: 800, minHeight: 900)
-        .background(Color.white)
+        #if os(macOS)
+        .background(Color(NSColor.controlBackgroundColor))
+        #else
+        .background(Color(.systemBackground))
+        #endif
         #else
         // iOS/iPadOS layout with NavigationView
         NavigationView {
@@ -85,7 +92,7 @@ struct ContentView: View {
     }
     
     private func startGame() {
-        mathMazeGame = MathMazeGame(size: selectedSize)
+        mathMazeGame = MathMazeGame(size: selectedSize, colorScheme: colorScheme)
         gameState = .playing
     }
 }
@@ -125,6 +132,7 @@ struct SizeSelectionView: View {
             .font(.largeTitle)
             #endif
             .fontWeight(.bold)
+            .foregroundColor(.primary)
     }
     
     private var sizeSelectionGrid: some View {
@@ -164,7 +172,7 @@ struct SizeSelectionView: View {
             #else
             .frame(height: 100)
             #endif
-            .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
+            .background(selectedSize == size ? Color.blue : Color(.systemGray5))
             .foregroundColor(selectedSize == size ? .white : .primary)
             #if os(visionOS)
             .clipShape(RoundedRectangle(cornerRadius: 20))

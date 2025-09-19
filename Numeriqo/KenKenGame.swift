@@ -79,12 +79,12 @@ class MathMazeGame: ObservableObject {
     private var sessionStartTime: Date?
     private var isTimerRunning: Bool = false
     
-    init(size: Int) {
+    init(size: Int, colorScheme: ColorScheme = .light) {
         self.size = size
         self.grid = Array(repeating: Array(repeating: nil, count: size), count: size)
         self.solution = MathMazeGame.generateLatinSquare(size: size)
         self.cages = []
-        generatePuzzle()
+        generatePuzzle(colorScheme: colorScheme)
         startTimer()
     }
     
@@ -278,28 +278,21 @@ class MathMazeGame: ObservableObject {
         return true
     }
     
-    private func generatePuzzle() {
+    private func generatePuzzle(colorScheme: ColorScheme = .light) {
         var usedPositions: Set<Position> = []
         var generatedCages: [Cage] = []
         
-        // Create grayscale colors - different shades of gray
-        let grayscaleShades: [Color] = [
-            Color.gray.opacity(0.1),
-            Color.gray.opacity(0.2),
-            Color.gray.opacity(0.3),
-            Color.gray.opacity(0.4),
-            Color.gray.opacity(0.5),
-            Color.gray.opacity(0.15),
-            Color.gray.opacity(0.25),
-            Color.gray.opacity(0.35),
-            Color.gray.opacity(0.45),
-            Color.black.opacity(0.1),
-            Color.black.opacity(0.15),
-            Color.black.opacity(0.2),
-            Color.black.opacity(0.25),
-            Color.black.opacity(0.3),
-            Color.black.opacity(0.35)
-        ]
+        // Create adaptive cage colors using HSB color space
+        let adaptiveCageColors: [Color] = {
+            let colorCount = 15
+            let brightness: Double = colorScheme == .dark ? 0.4 : 0.9
+            let saturation: Double = 0.3
+
+            return (0..<colorCount).map { index in
+                let hue = Double(index) / Double(colorCount)
+                return Color(hue: hue, saturation: saturation, brightness: brightness)
+            }
+        }()
         var colorIndex = 0
         
         while usedPositions.count < size * size {
@@ -336,7 +329,7 @@ class MathMazeGame: ObservableObject {
                 positions: cagePositions,
                 operation: operation,
                 target: target,
-                color: grayscaleShades[colorIndex % grayscaleShades.count]
+                color: adaptiveCageColors[colorIndex % adaptiveCageColors.count]
             )
             
             generatedCages.append(cage)
