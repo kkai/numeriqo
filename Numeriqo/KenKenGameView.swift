@@ -44,7 +44,7 @@ struct MathMazeGameView: View {
                     // Timer display
                     HStack {
                         Image(systemName: "timer")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(ThemeColors.secondaryText)
                             .font(.title)
                         Text(BestTimesManager.formatTime(game.elapsedTime))
                             .font(.title)
@@ -69,7 +69,7 @@ struct MathMazeGameView: View {
                 // Timer display
                 HStack {
                     Image(systemName: "timer")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(ThemeColors.secondaryText)
                     Text(BestTimesManager.formatTime(game.elapsedTime))
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -101,7 +101,7 @@ struct MathMazeGameView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 #endif
-                .background(Color.blue)
+                .background(ThemeColors.buttonBackgroundSelected)
                 .cornerRadius(8)
                 .padding(.horizontal)
                 #if os(macOS)
@@ -111,7 +111,7 @@ struct MathMazeGameView: View {
             #if os(macOS)
             .frame(maxWidth: 800)
             .padding()
-            .background(Color.white)
+            .background(ThemeColors.primaryBackground)
             #endif
             #endif
         }
@@ -336,7 +336,7 @@ struct CageLabelView: View {
             Text("\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
-                .foregroundColor(.black)
+                .foregroundColor(ThemeColors.cageLabel)
                 .position(
                     x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.40 + xOffset,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15 + yOffset
@@ -345,7 +345,7 @@ struct CageLabelView: View {
             Text("\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
-                .foregroundColor(.black)
+                .foregroundColor(ThemeColors.cageLabel)
                 .position(
                     x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.50,
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15
@@ -408,17 +408,17 @@ struct CellView: View {
                     .font(optimalNumberFont(for: cellSize))
                     .fontWeight(.semibold)
                     .foregroundColor(
-                        game.isValidMove(value, at: position) ? .primary : .red
+                        game.isValidMove(value, at: position) ? ThemeColors.primaryText : ThemeColors.errorText
                     )
             }
             
             // Selection highlight
             if game.selectedPosition == position {
                 Rectangle()
-                    .fill(Color.blue.opacity(0.2))
+                    .fill(ThemeColors.selectionHighlight)
                     .overlay(
                         Rectangle()
-                            .stroke(Color.blue, lineWidth: 2)
+                            .stroke(ThemeColors.selectionBorder, lineWidth: 2)
                     )
             }
         }
@@ -547,7 +547,7 @@ struct CageOutlineView: View {
                 }
             }
         }
-        .stroke(Color.black, lineWidth: 3)
+        .stroke(ThemeColors.cageBorder, lineWidth: 3)
     }
 }
 
@@ -562,7 +562,7 @@ struct NumberInputView: View {
                 #else
                 .font(.caption)
                 #endif
-                .foregroundColor(.secondary)
+                .foregroundColor(ThemeColors.secondaryText)
             
             #if os(macOS)
             // macOS layout - always use grid layout for better appearance
@@ -630,7 +630,7 @@ struct NumberInputView: View {
                 #else
                 .frame(width: 50, height: 50)
                 #endif
-                .background(game.selectedPosition != nil ? Color.red : Color.gray)
+                .background(game.selectedPosition != nil ? Color.red : ThemeColors.buttonBackgroundDisabled)
                 #if os(visionOS)
                 .cornerRadius(40)
                 #else
@@ -683,12 +683,12 @@ struct NumberInputView: View {
     }
     
     private func buttonColor(for number: Int) -> Color {
-        guard let selected = game.selectedPosition else { return Color.gray }
+        guard let selected = game.selectedPosition else { return ThemeColors.buttonBackgroundDisabled }
         
         if game.isValidMove(number, at: selected) {
-            return Color.blue
+            return ThemeColors.buttonBackgroundSelected
         } else {
-            return Color.gray
+            return ThemeColors.buttonBackgroundDisabled
         }
     }
 }
@@ -733,7 +733,7 @@ struct VisionProNumberInputView: View {
                     .frame(width: 85, height: 85)
                     .buttonStyle(.borderedProminent)
                     .disabled(!canEnterNumber(number))
-                    .tint(canEnterNumber(number) ? .blue : .gray)
+                    .tint(canEnterNumber(number) ? ThemeColors.buttonBackgroundSelected : ThemeColors.buttonBackgroundDisabled)
                 }
             }
         }

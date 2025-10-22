@@ -54,7 +54,7 @@ struct ContentView: View {
             .frame(maxHeight: .infinity)
         }
         .frame(minWidth: 800, minHeight: 900)
-        .background(Color.white)
+        .background(ThemeColors.primaryBackground)
         #else
         // iOS/iPadOS layout with NavigationView
         NavigationView {
@@ -154,7 +154,7 @@ struct SizeSelectionView: View {
                     #else
                     .font(.caption)
                     #endif
-                    .foregroundColor(.secondary)
+                    .foregroundColor(ThemeColors.secondaryText)
                 
                 bestTimeView(for: size)
             }
@@ -164,7 +164,7 @@ struct SizeSelectionView: View {
             #else
             .frame(height: 100)
             #endif
-            .background(selectedSize == size ? Color.blue : Color.gray.opacity(0.2))
+            .background(selectedSize == size ? ThemeColors.buttonBackgroundSelected : ThemeColors.unselectedButtonBackground)
             .foregroundColor(selectedSize == size ? .white : .primary)
             #if os(visionOS)
             .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -207,7 +207,7 @@ struct SizeSelectionView: View {
                     #else
                     .font(.caption2)
                     #endif
-                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : .secondary)
+                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : ThemeColors.secondaryText)
             }
         }
     }
@@ -229,7 +229,7 @@ struct SizeSelectionView: View {
         #else
         .frame(height: 50)
         #endif
-        .background(Color.blue)
+        .background(ThemeColors.buttonBackgroundSelected)
         #if os(visionOS)
         .cornerRadius(35)
         #else

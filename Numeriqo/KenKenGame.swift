@@ -46,7 +46,11 @@ struct Cage: Identifiable, Hashable {
     let positions: Set<Position>
     let operation: Operation
     let target: Int
-    let color: Color
+    let colorID: CageColorID
+
+    var color: Color {
+        colorID.adaptiveColor
+    }
     
     func contains(position: Position) -> Bool {
         positions.contains(position)
@@ -281,25 +285,7 @@ class MathMazeGame: ObservableObject {
     private func generatePuzzle() {
         var usedPositions: Set<Position> = []
         var generatedCages: [Cage] = []
-        
-        // Create grayscale colors - different shades of gray
-        let grayscaleShades: [Color] = [
-            Color.gray.opacity(0.1),
-            Color.gray.opacity(0.2),
-            Color.gray.opacity(0.3),
-            Color.gray.opacity(0.4),
-            Color.gray.opacity(0.5),
-            Color.gray.opacity(0.15),
-            Color.gray.opacity(0.25),
-            Color.gray.opacity(0.35),
-            Color.gray.opacity(0.45),
-            Color.black.opacity(0.1),
-            Color.black.opacity(0.15),
-            Color.black.opacity(0.2),
-            Color.black.opacity(0.25),
-            Color.black.opacity(0.3),
-            Color.black.opacity(0.35)
-        ]
+
         var colorIndex = 0
         
         while usedPositions.count < size * size {
@@ -336,7 +322,7 @@ class MathMazeGame: ObservableObject {
                 positions: cagePositions,
                 operation: operation,
                 target: target,
-                color: grayscaleShades[colorIndex % grayscaleShades.count]
+                colorID: CageColorID.fromIndex(colorIndex)
             )
             
             generatedCages.append(cage)
