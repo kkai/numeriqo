@@ -4,4 +4,4 @@ The rules are straightforward. Place numbers 1 through the grid size in each row
 
 Grid sizes range from 3x3 to 5x5. Start small to understand the mechanics, then tackle larger grids as you improve. Every puzzle has one correct solution.
 
-The game tracks your completion times and works on iPhone, iPad, Mac, and Apple Vision Pro. The interface stays out of your way so you can focus on solving.
+The game tracks your completion times and works on iPhone, iPad, Mac, and Apple Vision Pro. The interface adapts to both light and dark mode, staying out of your way so you can focus on solving.
