@@ -1,1 +1,1 @@
-Number puzzle game with math cages. Fill grids so each row and column has unique numbers while solving arithmetic constraints. Sizes 3x3 to 5x5.
+Number puzzle game with math cages. Fill grids so each row and column has unique numbers while solving arithmetic constraints. Sizes 3x3 to 5x5. Light and dark mode.

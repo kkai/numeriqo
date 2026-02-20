@@ -1,0 +1,1 @@
+Full dark mode support. The game now automatically adapts to your system appearance with improved contrast and readability in both light and dark modes. All grid elements, cages, and controls update seamlessly when you switch between appearances.
