@@ -312,24 +312,13 @@
       z-index: 1;
     }
 
-    .hero-icons {
-      display: flex;
-      justify-content: center;
-      gap: var(--space-lg);
-      margin-bottom: var(--space-xl);
-    }
-
     .hero-icon {
+      margin: 0 auto var(--space-xl);
       width: 120px;
       height: 120px;
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow-lg), var(--shadow-glow);
       animation: heroEntrance 0.8s ease both;
-    }
-
-    .hero-icon--pro {
-      box-shadow: var(--shadow-lg), var(--shadow-glow-cyan);
-      animation-delay: 0.1s;
     }
 
     @media (min-width: 768px) {
@@ -811,10 +800,7 @@
   <!-- ==================== HERO ==================== -->
   <section class="hero" id="hero">
     <div class="container">
-      <div class="hero-icons">
-        <img src="assets/numeriqo.png" alt="Numeriqo app icon" class="hero-icon" width="144" height="144">
-        <img src="assets/numeriqo-pro.png" alt="Numeriqo Pro app icon" class="hero-icon hero-icon--pro" width="144" height="144">
-      </div>
+      <img src="assets/numeriqo.png" alt="Numeriqo app icon" class="hero-icon" width="144" height="144">
 
       <h1>Numeriqo</h1>
       <p class="hero-tagline">Number puzzles with mathematical cages</p>
@@ -867,26 +853,26 @@
       <div class="features-layout">
         <div class="puzzle-demo fade-in">
           <div class="puzzle-grid" id="puzzle-grid">
-            <!-- Row 0 -->
-            <div class="puzzle-cell cage-tl"><span class="cage-label">7+</span><span class="cell-value" data-order="0">2</span></div>
-            <div class="puzzle-cell cage-tr"><span class="cage-label"></span><span class="cell-value" data-order="3">1</span></div>
-            <div class="puzzle-cell cage-tl"><span class="cage-label">2-</span><span class="cell-value" data-order="7">4</span></div>
-            <div class="puzzle-cell cage-tr"><span class="cage-label"></span><span class="cell-value" data-order="10">3</span></div>
-            <!-- Row 1 -->
-            <div class="puzzle-cell cage-bl"><span class="cage-label"></span><span class="cell-value" data-order="1">4</span></div>
-            <div class="puzzle-cell cage-br"><span class="cage-label"></span><span class="cell-value" data-order="5">3</span></div>
-            <div class="puzzle-cell cage-bl"><span class="cage-label"></span><span class="cell-value" data-order="9">2</span></div>
-            <div class="puzzle-cell cage-br"><span class="cage-label"></span><span class="cell-value" data-order="12">1</span></div>
-            <!-- Row 2 -->
-            <div class="puzzle-cell cage-tl"><span class="cage-label">3-</span><span class="cell-value" data-order="2">3</span></div>
-            <div class="puzzle-cell cage-tlr"><span class="cage-label">2/</span><span class="cell-value" data-order="6">4</span></div>
-            <div class="puzzle-cell cage-tl"><span class="cage-label">8x</span><span class="cell-value" data-order="8">1</span></div>
-            <div class="puzzle-cell cage-tr"><span class="cage-label"></span><span class="cell-value" data-order="13">2</span></div>
-            <!-- Row 3 -->
-            <div class="puzzle-cell cage-bl"><span class="cage-label"></span><span class="cell-value" data-order="4">1</span></div>
-            <div class="puzzle-cell cage-blr"><span class="cage-label"></span><span class="cell-value" data-order="11">2</span></div>
-            <div class="puzzle-cell cage-bl"><span class="cage-label"></span><span class="cell-value" data-order="14">3</span></div>
-            <div class="puzzle-cell cage-br"><span class="cage-label"></span><span class="cell-value" data-order="15">4</span></div>
+            <!-- Row 0: 1 2 3 4 -->
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">3+</span><span class="cell-value" data-order="0">1</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="2">2</span></div>
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">12x</span><span class="cell-value" data-order="4">3</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="6">4</span></div>
+            <!-- Row 1: 2 1 4 3 -->
+            <div class="puzzle-cell cage-tlr"><span class="cage-label">1-</span><span class="cell-value" data-order="1">2</span></div>
+            <div class="puzzle-cell cage-tlr"><span class="cage-label">3-</span><span class="cell-value" data-order="5">1</span></div>
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">7+</span><span class="cell-value" data-order="8">4</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="3">3</span></div>
+            <!-- Row 2: 3 4 1 2 -->
+            <div class="puzzle-cell cage-blr"><span class="cage-label"></span><span class="cell-value" data-order="7">3</span></div>
+            <div class="puzzle-cell cage-blr"><span class="cage-label"></span><span class="cell-value" data-order="10">4</span></div>
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">2x</span><span class="cell-value" data-order="9">1</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="13">2</span></div>
+            <!-- Row 3: 4 3 2 1 -->
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">1-</span><span class="cell-value" data-order="11">4</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="14">3</span></div>
+            <div class="puzzle-cell cage-tbl"><span class="cage-label">2/</span><span class="cell-value" data-order="12">2</span></div>
+            <div class="puzzle-cell cage-tbr"><span class="cage-label"></span><span class="cell-value" data-order="15">1</span></div>
           </div>
           <span class="puzzle-label">4x4 puzzle solving itself</span>
         </div>
@@ -967,16 +953,6 @@
               <td><span class="check">&#x2713;</span></td>
             </tr>
             <tr>
-              <td>6x6 grid</td>
-              <td><span class="dash">&mdash;</span></td>
-              <td><span class="check">&#x2713;</span></td>
-            </tr>
-            <tr>
-              <td>7x7, 8x8, 9x9 grids</td>
-              <td><span class="dash">&mdash;</span></td>
-              <td><span class="check">&#x2713;</span></td>
-            </tr>
-            <tr>
               <td>Add, subtract, multiply, divide cages</td>
               <td><span class="check">&#x2713;</span></td>
               <td><span class="check">&#x2713;</span></td>
@@ -999,6 +975,11 @@
             <tr>
               <td>Light & dark mode</td>
               <td><span class="check">&#x2713;</span></td>
+              <td><span class="check">&#x2713;</span></td>
+            </tr>
+            <tr>
+              <td>6x6, 7x7, 8x8, 9x9 grids</td>
+              <td><span class="dash">&mdash;</span></td>
               <td><span class="check">&#x2713;</span></td>
             </tr>
             <tr>
