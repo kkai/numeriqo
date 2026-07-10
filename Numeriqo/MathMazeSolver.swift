@@ -49,6 +49,29 @@ enum MathMazeSolver {
         return (found.first, stats)
     }
 
+    /// Precomputed, reusable validation context: cage tuple enumeration runs
+    /// once per puzzle, then many cheap partial-grid checks share it.
+    struct ValidationContext {
+        private let engine: Engine
+
+        init?(size: Int, cages: [SolverCage]) {
+            guard size >= 1, size <= 15, let engine = Engine(size: size, cages: cages) else { return nil }
+            self.engine = engine
+        }
+
+        /// Single-pass local consistency: the partial applies without row/col
+        /// duplicates, no empty cell has an empty row/col candidate mask, and
+        /// every cage keeps at least one live tuple. Deliberately NO singles
+        /// propagation and NO search — solutions are unique, so anything
+        /// stronger would reject every digit but the correct one and leak the
+        /// solution through the number pad.
+        func isLocallyConsistent(partial: [[Int?]]) -> Bool {
+            var probe = engine
+            guard probe.apply(partial: partial) else { return false }
+            return probe.localConsistencyCheck()
+        }
+    }
+
     private static func solutions(size: Int, cages: [SolverCage], partial: [[Int?]]?, limit: Int, stats: inout Stats) -> [[[Int]]] {
         guard size >= 1, size <= 15, limit > 0 else { return [] }
         guard var engine = Engine(size: size, cages: cages) else { return [] }
@@ -317,6 +340,38 @@ enum MathMazeSolver {
 
                 return true
             }
+        }
+
+        /// One pass of row/col mask computation plus cage tuple-liveness
+        /// checking, with no singles assignment. Cages partition the grid,
+        /// so this single pass is already the fixed point for this strength
+        /// of check — there is nothing to iterate.
+        mutating func localConsistencyCheck() -> Bool {
+            var complete = true
+            for cell in 0..<cellCount where values[cell] == 0 {
+                complete = false
+                masks[cell] = fullMask & ~rowUsed[cell / size] & ~colUsed[cell % size]
+                if masks[cell] == 0 { return false }
+            }
+            if complete { return allCagesExact() }
+
+            for cage in cageCells.indices {
+                let cells = cageCells[cage]
+                var anyLive = false
+                tupleLoop: for tuple in cageTuples[cage] {
+                    for (i, cell) in cells.enumerated() {
+                        if values[cell] != 0 {
+                            if values[cell] != tuple[i] { continue tupleLoop }
+                        } else if masks[cell] & UInt16(1 << tuple[i]) == 0 {
+                            continue tupleLoop
+                        }
+                    }
+                    anyLive = true
+                    break
+                }
+                if !anyLive { return false }
+            }
+            return true
         }
 
         /// Exact check of every cage once the grid is complete.
