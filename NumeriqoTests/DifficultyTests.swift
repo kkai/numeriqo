@@ -68,6 +68,39 @@ struct DifficultyTests {
         #expect(DifficultyRater.rate(size: 3, cages: cages) == .easy)
     }
 
+    @Test(arguments: [3, 4, 5, 6])
+    func generatedPuzzlesLandInTheRequestedBand(size: Int) {
+        // Tertile thresholds make a natural puzzle hit any band ~1/3 of the
+        // time, so 20 retries virtually never fall back — the returned
+        // puzzle's rated band should match the request. A drift here means
+        // DifficultyRater.thresholds are stale (re-run calibration).
+        for difficulty in Difficulty.allCases {
+            var matches = 0
+            let runs = 20
+            for _ in 0..<runs {
+                let puzzle = MathMazeGame.generatePuzzle(size: size, difficulty: difficulty)
+                if DifficultyRater.band(forScore: puzzle.score, size: size) == difficulty {
+                    matches += 1
+                }
+            }
+            #expect(Double(matches) >= 0.9 * Double(runs),
+                    "size \(size) \(difficulty.rawValue): only \(matches)/\(runs) in band — thresholds stale?")
+        }
+    }
+
+    @Test func nineByNineSpotCheckLandsInBand() {
+        for difficulty in Difficulty.allCases {
+            var matches = 0
+            for _ in 0..<5 {
+                let puzzle = MathMazeGame.generatePuzzle(size: 9, difficulty: difficulty)
+                if DifficultyRater.band(forScore: puzzle.score, size: 9) == difficulty {
+                    matches += 1
+                }
+            }
+            #expect(matches >= 3, "9x9 \(difficulty.rawValue): \(matches)/5 in band")
+        }
+    }
+
     @Test(arguments: 3...9)
     func generationWithDifficultyAlwaysReturnsAValidPuzzle(size: Int) {
         for difficulty in Difficulty.allCases {

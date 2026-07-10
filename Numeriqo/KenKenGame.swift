@@ -275,7 +275,7 @@ class MathMazeGame: ObservableObject {
     /// puzzles are still labeled with the requested tier (mismatches are
     /// rare and land in an adjacent band).
     static func generatePuzzle(size: Int, difficulty: Difficulty) -> GeneratedPuzzle {
-        let maxAttempts = size <= 6 ? 20 : 8
+        let maxAttempts = size <= 6 ? 20 : 12
         var best: GeneratedPuzzle?
         var bestDistance = Double.infinity
 
