@@ -87,13 +87,13 @@ enum DifficultyRater {
     /// DifficultyCalibrationTests (run with TEST_RUNNER_NUMERIQO_CALIBRATE=1)
     /// — re-run and re-paste whenever generation or the score weights change.
     static let thresholds: [Int: (easyMax: Double, mediumMax: Double)] = [
-        // PROVISIONAL until the calibration harness output is pasted.
-        3: (7.0, 10.0),
-        4: (9.0, 13.0),
-        5: (11.0, 16.0),
-        6: (13.0, 19.0),
-        7: (16.0, 24.0),
-        8: (18.0, 30.0),
-        9: (20.0, 36.0),
+        // Calibrated 2026-07-10 (200 samples/size for 3-6, 100 for 7-9).
+        3: (1.0, 2.5),
+        4: (2.2, 3.9),
+        5: (3.5, 5.3),
+        6: (4.5, 6.0),
+        7: (5.3, 6.7),
+        8: (6.2, 7.8),
+        9: (6.3, 8.0),
     ]
 }
