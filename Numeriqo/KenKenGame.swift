@@ -46,6 +46,19 @@ struct GeneratedPuzzle {
     let size: Int
     let solution: [[Int]]
     let cages: [Cage]
+    /// The tier this puzzle is presented as (the requested tier when
+    /// generated via generatePuzzle(size:difficulty:)).
+    let difficulty: Difficulty
+    /// The raw DifficultyRater score, kept for debugging and calibration.
+    let score: Double
+
+    init(size: Int, solution: [[Int]], cages: [Cage], difficulty: Difficulty = .medium, score: Double = 0) {
+        self.size = size
+        self.solution = solution
+        self.cages = cages
+        self.difficulty = difficulty
+        self.score = score
+    }
 }
 
 struct Cage: Identifiable, Hashable {
@@ -90,6 +103,7 @@ class MathMazeGame: ObservableObject {
     @Published var startTime: Date?
     
     let size: Int
+    let difficulty: Difficulty
     let solution: [[Int]]
     private var timer: Timer?
     private var accumulatedTime: TimeInterval = 0
@@ -106,12 +120,13 @@ class MathMazeGame: ObservableObject {
     /// the grid changes.
     private var moveCache: [Int: Bool] = [:]
 
-    convenience init(size: Int) {
-        self.init(puzzle: MathMazeGame.generatePuzzle(size: size))
+    convenience init(size: Int, difficulty: Difficulty = .medium) {
+        self.init(puzzle: MathMazeGame.generatePuzzle(size: size, difficulty: difficulty))
     }
 
     init(puzzle: GeneratedPuzzle) {
         self.size = puzzle.size
+        self.difficulty = puzzle.difficulty
         self.grid = Array(repeating: Array(repeating: nil, count: puzzle.size), count: puzzle.size)
         self.solution = puzzle.solution
         self.cages = puzzle.cages
@@ -254,10 +269,50 @@ class MathMazeGame: ObservableObject {
         return true
     }
     
+    /// Generates a puzzle in the requested difficulty band: retries natural
+    /// generation until the solver-derived score lands in the band, falling
+    /// back to the nearest miss so a puzzle is always returned. Fallback
+    /// puzzles are still labeled with the requested tier (mismatches are
+    /// rare and land in an adjacent band).
+    static func generatePuzzle(size: Int, difficulty: Difficulty) -> GeneratedPuzzle {
+        let maxAttempts = size <= 6 ? 20 : 8
+        var best: GeneratedPuzzle?
+        var bestDistance = Double.infinity
+
+        for _ in 0..<maxAttempts {
+            let candidate = generatePuzzle(size: size)
+            if candidate.difficulty == difficulty {
+                return candidate
+            }
+            let distance = bandDistance(score: candidate.score, target: difficulty, size: size)
+            if distance < bestDistance {
+                bestDistance = distance
+                best = candidate
+            }
+        }
+
+        let fallback = best!
+        #if DEBUG
+        print("[MathMaze] size \(size): no \(difficulty.rawValue) puzzle in \(maxAttempts) attempts; using nearest (score \(fallback.score), rated \(fallback.difficulty.rawValue))")
+        #endif
+        return GeneratedPuzzle(size: size, solution: fallback.solution, cages: fallback.cages,
+                               difficulty: difficulty, score: fallback.score)
+    }
+
+    /// Distance from a score to the target band's interval (0 when inside).
+    private static func bandDistance(score: Double, target: Difficulty, size: Int) -> Double {
+        guard let t = DifficultyRater.thresholds[size] else { return 0 }
+        switch target {
+        case .easy: return max(0, score - t.easyMax)
+        case .medium: return max(t.easyMax - score, score - t.mediumMax, 0)
+        case .hard: return max(0, t.mediumMax - score)
+        }
+    }
+
     /// Generates a puzzle with a verified unique solution: grows random cages
     /// over a random Latin square, then repairs the cage set (constraining
     /// operations or splitting cages) until the solver proves exactly one
-    /// solution exists.
+    /// solution exists. The result carries its natural (rated) difficulty.
     static func generatePuzzle(size: Int) -> GeneratedPuzzle {
         let maxRepairsPerSquare = 10
         let maxRegenerations = 20
@@ -283,7 +338,11 @@ class MathMazeGame: ObservableObject {
                         print("[MathMaze] size \(size): \(repairCount) repairs, \(regenerationCount) regenerations")
                     }
                     #endif
-                    return GeneratedPuzzle(size: size, solution: solution, cages: recolored(cages))
+                    let finalCages = recolored(cages)
+                    let score = DifficultyRater.score(size: size, cages: finalCages.map(\.solverCage)) ?? 0
+                    return GeneratedPuzzle(size: size, solution: solution, cages: finalCages,
+                                           difficulty: DifficultyRater.band(forScore: score, size: size),
+                                           score: score)
                 }
                 // Zero solutions would mean the seed itself no longer fits —
                 // a generation bug; bail to a fresh square.

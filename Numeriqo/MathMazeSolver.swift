@@ -49,6 +49,14 @@ enum MathMazeSolver {
         return (found.first, stats)
     }
 
+    /// Number of feasible value tuples per cage (same order as `cages`),
+    /// or nil for a malformed/unsatisfiable cage set. Feeds difficulty
+    /// rating: ambiguous cages make puzzles harder.
+    static func tupleCounts(size: Int, cages: [SolverCage]) -> [Int]? {
+        guard size >= 1, size <= 15, let engine = Engine(size: size, cages: cages) else { return nil }
+        return engine.cageTuples.map(\.count)
+    }
+
     /// Precomputed, reusable validation context: cage tuple enumeration runs
     /// once per puzzle, then many cheap partial-grid checks share it.
     struct ValidationContext {
