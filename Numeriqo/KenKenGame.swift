@@ -195,7 +195,7 @@ class MathMazeGame: ObservableObject {
             stopTimer()
             // Save best time if applicable
             if let completionTime = elapsedTime as TimeInterval? {
-                BestTimesManager.shared.updateBestTime(for: size, time: completionTime)
+                BestTimesManager.shared.updateBestTime(for: size, difficulty: difficulty, time: completionTime)
             }
         }
     }
