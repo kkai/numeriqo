@@ -119,11 +119,11 @@ struct MathMazeGameView: View {
             if newValue {
                 let time = game.elapsedTime
                 let formattedTime = BestTimesManager.formatTime(time)
-                let isNewRecord = BestTimesManager.shared.isNewBestTime(for: game.size, time: time)
-                
+                let isNewRecord = BestTimesManager.shared.isNewBestTime(for: game.size, difficulty: game.difficulty, time: time)
+
                 if isNewRecord {
                     completionMessage = "You solved the puzzle in \(formattedTime)!\n🎉 New Record!"
-                } else if let bestTime = BestTimesManager.shared.getBestTime(for: game.size) {
+                } else if let bestTime = BestTimesManager.shared.getBestTime(for: game.size, difficulty: game.difficulty) {
                     let formattedBest = BestTimesManager.formatTime(bestTime)
                     completionMessage = "You solved the puzzle in \(formattedTime)!\nBest time: \(formattedBest)"
                 } else {
