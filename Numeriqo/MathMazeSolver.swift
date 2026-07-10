@@ -21,7 +21,7 @@ struct SolverCage: Hashable {
 enum MathMazeSolver {
 
     struct Stats {
-        /// Cells fixed by naked-single propagation (no guessing needed).
+        /// Cells fixed by propagation (naked/hidden singles — no guessing).
         var propagationSolvedCells = 0
         /// Branch points where the solver had to guess among ≥2 candidates.
         var guessCount = 0
@@ -51,10 +51,11 @@ enum MathMazeSolver {
 
     private static func solutions(size: Int, cages: [SolverCage], partial: [[Int?]]?, limit: Int, stats: inout Stats) -> [[[Int]]] {
         guard size >= 1, size <= 15, limit > 0 else { return [] }
-        var engine = Engine(size: size, cages: cages)
-        guard engine.isConsistent, engine.apply(partial: partial) else { return [] }
-        engine.search(limit: limit, depth: 0, stats: &stats)
-        return engine.found
+        guard var engine = Engine(size: size, cages: cages) else { return [] }
+        guard engine.apply(partial: partial) else { return [] }
+        var found: [[[Int]]] = []
+        engine.search(limit: limit, depth: 0, found: &found, stats: &stats)
+        return found
     }
 
     // MARK: - Engine
@@ -62,45 +63,84 @@ enum MathMazeSolver {
     private struct Engine {
         let size: Int
         let cellCount: Int
-        let fullMask: UInt16          // bits 1...size set
-        let cages: [SolverCage]
-        var cageCells: [[Int]]        // cage index -> flat cell indices
-        var cagesOfCell: [[Int]]      // flat cell index -> cage indices containing it
-        var values: [Int]             // 0 = empty
+        let fullMask: UInt16                  // bits 1...size set
+        let cageCells: [[Int]]                // cage index -> flat cell indices
+        let cageTuples: [[[Int]]]             // cage index -> feasible value tuples (aligned with cageCells)
+        let cagesOfCell: [[Int]]              // flat cell index -> cage indices containing it
+        var values: [Int]                     // 0 = empty
         var rowUsed: [UInt16]
         var colUsed: [UInt16]
-        var found: [[[Int]]] = []
-        var isConsistent = true
+        var masks: [UInt16]                   // propagated candidate masks for unassigned cells
 
-        init(size: Int, cages: [SolverCage]) {
+        /// Returns nil when a cage is malformed or has no feasible values at all.
+        init?(size: Int, cages: [SolverCage]) {
             self.size = size
             self.cellCount = size * size
             self.fullMask = UInt16((1 << (size + 1)) - 2)
-            self.cages = cages
-            self.cageCells = []
-            self.cagesOfCell = Array(repeating: [], count: cellCount)
             self.values = Array(repeating: 0, count: cellCount)
             self.rowUsed = Array(repeating: 0, count: size)
             self.colUsed = Array(repeating: 0, count: size)
+            self.masks = Array(repeating: 0, count: cellCount)
+
+            var cells: [[Int]] = []
+            var tuples: [[[Int]]] = []
+            var byCell: [[Int]] = Array(repeating: [], count: cellCount)
 
             for (index, cage) in cages.enumerated() {
-                var cells: [Int] = []
+                var cageCellList: [Int] = []
                 for pos in cage.positions {
-                    guard pos.row >= 0, pos.row < size, pos.col >= 0, pos.col < size else {
-                        isConsistent = false
-                        cageCells.append([])
-                        return
-                    }
+                    guard pos.row >= 0, pos.row < size, pos.col >= 0, pos.col < size else { return nil }
                     let cell = pos.row * size + pos.col
-                    cells.append(cell)
-                    cagesOfCell[cell].append(index)
+                    cageCellList.append(cell)
+                    byCell[cell].append(index)
                 }
-                cageCells.append(cells)
+                let feasible = Engine.enumerateTuples(cage: cage, size: size)
+                if feasible.isEmpty { return nil }
+                cells.append(cageCellList)
+                tuples.append(feasible)
             }
+
+            self.cageCells = cells
+            self.cageTuples = tuples
+            self.cagesOfCell = byCell
+        }
+
+        /// All value assignments for a cage that hit the target (via
+        /// Operation.calculate) and respect distinctness between cage cells
+        /// sharing a row or column. Cages are ≤4 cells, so exhaustive
+        /// enumeration at init is cheap and pays for itself during search.
+        private static func enumerateTuples(cage: SolverCage, size: Int) -> [[Int]] {
+            let positions = cage.positions
+            var result: [[Int]] = []
+            var current: [Int] = []
+
+            func extend(_ index: Int) {
+                if index == positions.count {
+                    if cage.operation.calculate(current) == cage.target {
+                        result.append(current)
+                    }
+                    return
+                }
+                let pos = positions[index]
+                candidateLoop: for value in 1...size {
+                    for j in 0..<index where current[j] == value {
+                        let other = positions[j]
+                        if other.row == pos.row || other.col == pos.col {
+                            continue candidateLoop
+                        }
+                    }
+                    current.append(value)
+                    extend(index + 1)
+                    current.removeLast()
+                }
+            }
+
+            extend(0)
+            return result
         }
 
         mutating func apply(partial: [[Int?]]?) -> Bool {
-            guard let partial else { return allCagesCompletable() }
+            guard let partial else { return true }
             guard partial.count == size else { return false }
             for row in 0..<size {
                 guard partial[row].count == size else { return false }
@@ -114,151 +154,186 @@ enum MathMazeSolver {
                     colUsed[col] |= bit
                 }
             }
-            return allCagesCompletable()
-        }
-
-        private mutating func allCagesCompletable() -> Bool {
-            for index in cages.indices where !cageCompletable(index) {
-                return false
-            }
+            // Cage contradictions in the givens surface via propagate() in search.
             return true
         }
 
         // MARK: Search
 
-        mutating func search(limit: Int, depth: Int, stats: inout Stats) {
-            var trail: [Int] = []
-
-            while true {
-                // Find the unassigned cell with the fewest row/col-legal candidates (MRV).
-                var bestCell = -1
-                var bestMask: UInt16 = 0
-                var bestCount = Int.max
-                for cell in 0..<cellCount where values[cell] == 0 {
-                    let mask = fullMask & ~rowUsed[cell / size] & ~colUsed[cell % size]
-                    let count = mask.nonzeroBitCount
-                    if count < bestCount {
-                        bestCount = count
-                        bestCell = cell
-                        bestMask = mask
-                        if count == 0 { break }
-                    }
-                }
-
-                if bestCell == -1 {
-                    // Grid complete; every cage was exact-checked on its last assignment.
-                    found.append(currentGrid())
-                    break
-                }
-                if bestCount == 0 { break }
-
-                // Filter row/col-legal candidates through exact cage feasibility
-                // so cage-forced cells count as propagation, not guesses.
-                var filteredMask: UInt16 = 0
-                var probe = bestMask
-                while probe != 0 {
-                    let value = probe.trailingZeroBitCount
-                    probe &= probe - 1
-                    if assign(bestCell, value) {
-                        filteredMask |= UInt16(1 << value)
-                        unassign(bestCell, value)
-                    }
-                }
-                let candidateCount = filteredMask.nonzeroBitCount
-                if candidateCount == 0 { break }
-
-                if candidateCount == 1 {
-                    let value = filteredMask.trailingZeroBitCount
-                    _ = assign(bestCell, value)
-                    trail.append(bestCell)
-                    stats.propagationSolvedCells += 1
-                    continue
-                }
-
-                // Branch point: try each candidate.
-                stats.guessCount += 1
-                stats.maxDepth = max(stats.maxDepth, depth + 1)
-                var mask = filteredMask
-                while mask != 0 {
-                    let value = mask.trailingZeroBitCount
-                    mask &= mask - 1
-                    if assign(bestCell, value) {
-                        search(limit: limit, depth: depth + 1, stats: &stats)
-                        unassign(bestCell, value)
-                        if found.count >= limit { break }
-                    }
-                }
-                break
+        func search(limit: Int, depth: Int, found: inout [[[Int]]], stats: inout Stats) {
+            var node = self
+            guard node.propagate(stats: &stats) else { return }
+            guard let (cell, candidates) = node.branchCell() else {
+                found.append(node.currentGrid())
+                return
             }
-
-            for cell in trail.reversed() {
-                unassign(cell, values[cell])
+            stats.guessCount += 1
+            stats.maxDepth = max(stats.maxDepth, depth + 1)
+            var mask = candidates
+            while mask != 0 {
+                let value = mask.trailingZeroBitCount
+                mask &= mask - 1
+                var child = node
+                child.place(cell, value)
+                child.search(limit: limit, depth: depth + 1, found: &found, stats: &stats)
+                if found.count >= limit { return }
             }
         }
 
-        /// Places a value and verifies every cage containing the cell is still
-        /// completable. Rolls back and returns false on failure.
-        private mutating func assign(_ cell: Int, _ value: Int) -> Bool {
+        /// The unassigned cell with the fewest candidates, or nil when the
+        /// grid is complete. Uses the masks left by the last propagate() pass.
+        private func branchCell() -> (Int, UInt16)? {
+            var bestCell = -1
+            var bestMask: UInt16 = 0
+            var bestCount = Int.max
+            for cell in 0..<cellCount where values[cell] == 0 {
+                let count = masks[cell].nonzeroBitCount
+                if count < bestCount {
+                    bestCount = count
+                    bestCell = cell
+                    bestMask = masks[cell]
+                }
+            }
+            return bestCell == -1 ? nil : (bestCell, bestMask)
+        }
+
+        private mutating func place(_ cell: Int, _ value: Int) {
             let bit = UInt16(1 << value)
             values[cell] = value
             rowUsed[cell / size] |= bit
             colUsed[cell % size] |= bit
-            for cageIndex in cagesOfCell[cell] where !cageCompletable(cageIndex) {
-                unassign(cell, value)
-                return false
+        }
+
+        /// Recomputes candidate masks (row/col legality intersected with the
+        /// values live cage tuples still allow) and assigns naked and hidden
+        /// singles until a fixed point. Returns false on contradiction.
+        private mutating func propagate(stats: inout Stats) -> Bool {
+            restart: while true {
+                // Row/col legality.
+                var complete = true
+                for cell in 0..<cellCount where values[cell] == 0 {
+                    complete = false
+                    masks[cell] = fullMask & ~rowUsed[cell / size] & ~colUsed[cell % size]
+                }
+                if complete { return allCagesExact() }
+
+                // Narrow by cage feasibility: a value survives only if some
+                // live tuple of the covering cage uses it there.
+                for cage in cageCells.indices {
+                    let cells = cageCells[cage]
+                    var hasUnassigned = false
+                    for cell in cells where values[cell] == 0 { hasUnassigned = true; break }
+
+                    var allowed = [UInt16](repeating: 0, count: cells.count)
+                    var anyLive = false
+                    tupleLoop: for tuple in cageTuples[cage] {
+                        for (i, cell) in cells.enumerated() {
+                            if values[cell] != 0 {
+                                if values[cell] != tuple[i] { continue tupleLoop }
+                            } else if masks[cell] & UInt16(1 << tuple[i]) == 0 {
+                                continue tupleLoop
+                            }
+                        }
+                        anyLive = true
+                        if !hasUnassigned { break }
+                        for (i, cell) in cells.enumerated() where values[cell] == 0 {
+                            allowed[i] |= UInt16(1 << tuple[i])
+                        }
+                    }
+                    if !anyLive { return false }
+                    for (i, cell) in cells.enumerated() where values[cell] == 0 {
+                        masks[cell] &= allowed[i]
+                        if masks[cell] == 0 { return false }
+                    }
+                }
+
+                // Naked singles: cells with exactly one candidate. Masks go
+                // stale as singles are placed, so recheck row/col legality —
+                // two same-row cells narrowed to the same value is a
+                // contradiction.
+                var assignedAny = false
+                for cell in 0..<cellCount where values[cell] == 0 && masks[cell].nonzeroBitCount == 1 {
+                    let value = masks[cell].trailingZeroBitCount
+                    let bit = UInt16(1 << value)
+                    if rowUsed[cell / size] & bit != 0 || colUsed[cell % size] & bit != 0 {
+                        return false
+                    }
+                    place(cell, value)
+                    stats.propagationSolvedCells += 1
+                    assignedAny = true
+                }
+                if assignedAny { continue restart }
+
+                // Hidden singles: a missing value with only one legal cell
+                // in its row (resp. column).
+                for row in 0..<size {
+                    var missing = fullMask & ~rowUsed[row]
+                    while missing != 0 {
+                        let value = missing.trailingZeroBitCount
+                        missing &= missing - 1
+                        let bit = UInt16(1 << value)
+                        var onlyCell = -1
+                        var count = 0
+                        for col in 0..<size {
+                            let cell = row * size + col
+                            if values[cell] == 0 && masks[cell] & bit != 0 {
+                                count += 1
+                                if count > 1 { break }
+                                onlyCell = cell
+                            }
+                        }
+                        if count == 0 { return false }
+                        if count == 1 {
+                            place(onlyCell, value)
+                            stats.propagationSolvedCells += 1
+                            continue restart
+                        }
+                    }
+                }
+                for col in 0..<size {
+                    var missing = fullMask & ~colUsed[col]
+                    while missing != 0 {
+                        let value = missing.trailingZeroBitCount
+                        missing &= missing - 1
+                        let bit = UInt16(1 << value)
+                        var onlyCell = -1
+                        var count = 0
+                        for row in 0..<size {
+                            let cell = row * size + col
+                            if values[cell] == 0 && masks[cell] & bit != 0 {
+                                count += 1
+                                if count > 1 { break }
+                                onlyCell = cell
+                            }
+                        }
+                        if count == 0 { return false }
+                        if count == 1 {
+                            place(onlyCell, value)
+                            stats.propagationSolvedCells += 1
+                            continue restart
+                        }
+                    }
+                }
+
+                return true
+            }
+        }
+
+        /// Exact check of every cage once the grid is complete.
+        private func allCagesExact() -> Bool {
+            for cage in cageCells.indices {
+                let cells = cageCells[cage]
+                var live = false
+                tupleLoop: for tuple in cageTuples[cage] {
+                    for (i, cell) in cells.enumerated() where values[cell] != tuple[i] {
+                        continue tupleLoop
+                    }
+                    live = true
+                    break
+                }
+                if !live { return false }
             }
             return true
-        }
-
-        private mutating func unassign(_ cell: Int, _ value: Int) {
-            let bit = UInt16(1 << value)
-            values[cell] = 0
-            rowUsed[cell / size] &= ~bit
-            colUsed[cell % size] &= ~bit
-        }
-
-        // MARK: Cage feasibility
-
-        /// Exact feasibility: can the cage's unassigned cells be filled with
-        /// row/col-legal values so Operation.calculate hits the target?
-        /// Cages are ≤4 cells, so exhaustive enumeration is cheap.
-        private mutating func cageCompletable(_ cageIndex: Int) -> Bool {
-            let cage = cages[cageIndex]
-            var filled: [Int] = []
-            var empty: [Int] = []
-            for cell in cageCells[cageIndex] {
-                if values[cell] != 0 {
-                    filled.append(values[cell])
-                } else {
-                    empty.append(cell)
-                }
-            }
-            if empty.isEmpty {
-                return cage.operation.calculate(filled) == cage.target
-            }
-            return completeCage(cage, empty: empty, index: 0, filled: &filled)
-        }
-
-        private mutating func completeCage(_ cage: SolverCage, empty: [Int], index: Int, filled: inout [Int]) -> Bool {
-            if index == empty.count {
-                return cage.operation.calculate(filled) == cage.target
-            }
-            let cell = empty[index]
-            var mask = fullMask & ~rowUsed[cell / size] & ~colUsed[cell % size]
-            while mask != 0 {
-                let value = mask.trailingZeroBitCount
-                mask &= mask - 1
-                let bit = UInt16(1 << value)
-                rowUsed[cell / size] |= bit
-                colUsed[cell % size] |= bit
-                filled.append(value)
-                let ok = completeCage(cage, empty: empty, index: index + 1, filled: &filled)
-                filled.removeLast()
-                rowUsed[cell / size] &= ~bit
-                colUsed[cell % size] &= ~bit
-                if ok { return true }
-            }
-            return false
         }
 
         private func currentGrid() -> [[Int]] {
