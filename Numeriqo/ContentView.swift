@@ -16,6 +16,7 @@ struct NoEffectButtonStyle: ButtonStyle {
 struct ContentView: View {
     @State private var gameState: GameState = .sizeSelection
     @State private var selectedSize: Int = 4
+    @State private var selectedDifficulty: Difficulty = .medium
     @State private var mathMazeGame: MathMazeGame?
     
     var body: some View {
@@ -39,6 +40,7 @@ struct ContentView: View {
                 case .sizeSelection:
                     SizeSelectionView(
                         selectedSize: $selectedSize,
+                        selectedDifficulty: $selectedDifficulty,
                         onStartGame: startGame
                     )
                 case .playing:
@@ -63,6 +65,7 @@ struct ContentView: View {
                 case .sizeSelection:
                     SizeSelectionView(
                         selectedSize: $selectedSize,
+                        selectedDifficulty: $selectedDifficulty,
                         onStartGame: startGame
                     )
                 case .playing:
@@ -85,7 +88,7 @@ struct ContentView: View {
     }
     
     private func startGame() {
-        mathMazeGame = MathMazeGame(size: selectedSize)
+        mathMazeGame = MathMazeGame(size: selectedSize, difficulty: selectedDifficulty)
         gameState = .playing
     }
 }
@@ -97,23 +100,38 @@ enum GameState {
 
 struct SizeSelectionView: View {
     @Binding var selectedSize: Int
+    @Binding var selectedDifficulty: Difficulty
     let onStartGame: () -> Void
-    
+
     #if NUMERIQO_PRO
     private let availableSizes = [3, 4, 5, 6, 7, 8, 9]
     #else
     private let availableSizes = [3, 4, 5]
     #endif
-    
+
     var body: some View {
         VStack(spacing: 20) {
             titleView
             sizeSelectionGrid
+            difficultyPicker
             startGameButton
         }
         .padding()
         #if os(visionOS)
         .padding(.bottom)
+        #endif
+    }
+
+    private var difficultyPicker: some View {
+        Picker("Difficulty", selection: $selectedDifficulty) {
+            ForEach(Difficulty.allCases) { difficulty in
+                Text(difficulty.displayName).tag(difficulty)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        #if os(visionOS)
+        .controlSize(.large)
         #endif
     }
     
@@ -148,14 +166,7 @@ struct SizeSelectionView: View {
                     .font(.title2)
                     #endif
                     .fontWeight(.semibold)
-                Text(difficultyText(for: size))
-                    #if os(visionOS)
-                    .font(.headline)
-                    #else
-                    .font(.caption)
-                    #endif
-                    .foregroundColor(ThemeColors.secondaryText)
-                
+
                 bestTimeView(for: size)
             }
             .frame(maxWidth: .infinity)
@@ -182,7 +193,7 @@ struct SizeSelectionView: View {
     
     private func bestTimeView(for size: Int) -> some View {
         Group {
-            if let bestTime = BestTimesManager.shared.getBestTime(for: size) {
+            if let bestTime = BestTimesManager.shared.getBestTime(for: size, difficulty: selectedDifficulty) {
                 HStack(spacing: 4) {
                     Image(systemName: "trophy.fill")
                         #if os(visionOS)
@@ -241,23 +252,6 @@ struct SizeSelectionView: View {
         #endif
     }
     
-    private func difficultyText(for size: Int) -> String {
-        switch size {
-        case 3: return "Easy"
-        case 4: return "Medium"
-        case 5: 
-            #if NUMERIQO_PRO
-            return "Hard"
-            #else
-            return "Expert"
-            #endif
-        case 6: return "Expert"
-        case 7: return "Master"
-        case 8: return "Grand Master"
-        case 9: return "Legend"
-        default: return ""
-        }
-    }
 }
 
 #Preview {
