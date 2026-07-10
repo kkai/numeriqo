@@ -9,12 +9,18 @@
 /* Begin PBXFileReference section */
 		2AC24A5A2E35D8C000111972 /* Numeriqo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Numeriqo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AC24A6A2E35D8C200111972 /* Numeriqo Pro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Numeriqo Pro.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2AC24A802E35D8C300111972 /* NumeriqoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NumeriqoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2AC24A5C2E35D8C000111972 /* Numeriqo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Numeriqo;
+			sourceTree = "<group>";
+		};
+		2AC24A892E35D8C300111972 /* NumeriqoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NumeriqoTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +40,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2AC24A832E35D8C300111972 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -41,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				2AC24A5C2E35D8C000111972 /* Numeriqo */,
+				2AC24A892E35D8C300111972 /* NumeriqoTests */,
 				2AC24A5B2E35D8C000111972 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +64,7 @@
 			children = (
 				2AC24A5A2E35D8C000111972 /* Numeriqo.app */,
 				2AC24A6A2E35D8C200111972 /* Numeriqo Pro.app */,
+				2AC24A802E35D8C300111972 /* NumeriqoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,6 +116,29 @@
 			productReference = 2AC24A6A2E35D8C200111972 /* Numeriqo Pro.app */;
 			productType = "com.apple.product-type.application";
 		};
+		2AC24A812E35D8C300111972 /* NumeriqoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AC24A862E35D8C300111972 /* Build configuration list for PBXNativeTarget "NumeriqoTests" */;
+			buildPhases = (
+				2AC24A822E35D8C300111972 /* Sources */,
+				2AC24A832E35D8C300111972 /* Frameworks */,
+				2AC24A842E35D8C300111972 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2AC24A852E35D8C300111972 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2AC24A892E35D8C300111972 /* NumeriqoTests */,
+			);
+			name = NumeriqoTests;
+			packageProductDependencies = (
+			);
+			productName = NumeriqoTests;
+			productReference = 2AC24A802E35D8C300111972 /* NumeriqoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -116,6 +154,10 @@
 					};
 					2AC24A692E35D8C200111972 = {
 						CreatedOnToolsVersion = 16.4;
+					};
+					2AC24A812E35D8C300111972 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 2AC24A592E35D8C000111972;
 					};
 				};
 			};
@@ -135,6 +177,7 @@
 			targets = (
 				2AC24A592E35D8C000111972 /* Numeriqo */,
 				2AC24A692E35D8C200111972 /* Numeriqo Pro */,
+				2AC24A812E35D8C300111972 /* NumeriqoTests */,
 			);
 		};
 /* End PBXProject section */
@@ -148,6 +191,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		2AC24A6E2E35D8C200111972 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AC24A842E35D8C300111972 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -171,7 +221,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2AC24A822E35D8C300111972 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2AC24A852E35D8C300111972 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2AC24A592E35D8C000111972 /* Numeriqo */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2AC24A642E35D8C100111972 /* Debug */ = {
@@ -456,6 +520,52 @@
 			};
 			name = Release;
 		};
+		2AC24A872E35D8C300111972 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H42EZRCCP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.kaikunze.numeriqoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Numeriqo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Numeriqo";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Debug;
+		};
+		2AC24A882E35D8C300111972 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8H42EZRCCP;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.kaikunze.numeriqoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Numeriqo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Numeriqo";
+				XROS_DEPLOYMENT_TARGET = 2.5;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -482,6 +592,15 @@
 			buildConfigurations = (
 				2AC24A6F2E35D8C200111972 /* Debug */,
 				2AC24A702E35D8C200111972 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2AC24A862E35D8C300111972 /* Build configuration list for PBXNativeTarget "NumeriqoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AC24A872E35D8C300111972 /* Debug */,
+				2AC24A882E35D8C300111972 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
