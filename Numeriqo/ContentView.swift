@@ -201,7 +201,7 @@ struct SizeSelectionView: View {
                         #else
                         .font(.caption2)
                         #endif
-                        .foregroundColor(selectedSize == size ? .yellow : .orange)
+                        .foregroundColor(selectedSize == size ? .yellow : .blue)
                     Text(BestTimesManager.formatTime(bestTime))
                         #if os(visionOS)
                         .font(.headline)
