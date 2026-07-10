@@ -41,12 +41,23 @@ enum Operation: String, CaseIterable {
     }
 }
 
+/// A fully generated puzzle: seed solution plus a cage set with exactly one solution.
+struct GeneratedPuzzle {
+    let size: Int
+    let solution: [[Int]]
+    let cages: [Cage]
+}
+
 struct Cage: Identifiable, Hashable {
     let id = UUID()
     let positions: Set<Position>
     let operation: Operation
     let target: Int
     let colorID: CageColorID
+
+    var solverCage: SolverCage {
+        SolverCage(positions: Array(positions), operation: operation, target: target)
+    }
 
     var color: Color {
         colorID.adaptiveColor
@@ -77,7 +88,7 @@ class MathMazeGame: ObservableObject {
     @Published var startTime: Date?
     
     let size: Int
-    private let solution: [[Int]]
+    let solution: [[Int]]
     private var timer: Timer?
     private var accumulatedTime: TimeInterval = 0
     private var sessionStartTime: Date?
@@ -86,9 +97,9 @@ class MathMazeGame: ObservableObject {
     init(size: Int) {
         self.size = size
         self.grid = Array(repeating: Array(repeating: nil, count: size), count: size)
-        self.solution = MathMazeGame.generateLatinSquare(size: size)
-        self.cages = []
-        generatePuzzle()
+        let puzzle = MathMazeGame.generatePuzzle(size: size)
+        self.solution = puzzle.solution
+        self.cages = puzzle.cages
         startTimer()
     }
     
@@ -257,7 +268,7 @@ class MathMazeGame: ObservableObject {
         }
     }
     
-    private func isValidSolution() -> Bool {
+    func isValidSolution() -> Bool {
         // Check row and column constraints
         for i in 0..<size {
             let row = grid[i].compactMap { $0 }
@@ -282,12 +293,56 @@ class MathMazeGame: ObservableObject {
         return true
     }
     
-    private func generatePuzzle() {
+    /// Generates a puzzle with a verified unique solution: grows random cages
+    /// over a random Latin square, then repairs the cage set (constraining
+    /// operations or splitting cages) until the solver proves exactly one
+    /// solution exists.
+    static func generatePuzzle(size: Int) -> GeneratedPuzzle {
+        let maxRepairsPerSquare = 10
+        let maxRegenerations = 20
+        var regenerationCount = 0
+        var repairCount = 0
+
+        for _ in 0..<maxRegenerations {
+            let solution = generateLatinSquare(size: size)
+            var cages = growCages(solution: solution, size: size)
+
+            for _ in 0...maxRepairsPerSquare {
+                let found = MathMazeSolver.solutions(
+                    size: size,
+                    cages: cages.map(\.solverCage),
+                    limit: 2
+                )
+                if found.count == 1 {
+                    #if DEBUG
+                    assert(found[0] == solution, "Unique solution does not match the seed solution")
+                    assert(cages.reduce(0) { $0 + $1.positions.count } == size * size,
+                           "Cages do not partition the grid")
+                    if repairCount > 0 || regenerationCount > 0 {
+                        print("[MathMaze] size \(size): \(repairCount) repairs, \(regenerationCount) regenerations")
+                    }
+                    #endif
+                    return GeneratedPuzzle(size: size, solution: solution, cages: recolored(cages))
+                }
+                // Zero solutions would mean the seed itself no longer fits —
+                // a generation bug; bail to a fresh square.
+                guard let alternate = found.first(where: { $0 != solution }) else { break }
+                cages = repair(cages: cages, seed: solution, alternate: alternate, size: size)
+                repairCount += 1
+            }
+            regenerationCount += 1
+        }
+        fatalError("Puzzle generation failed to converge for size \(size)")
+    }
+
+    /// Grows random 1–4-cell cages until they cover the grid, with operations
+    /// and targets derived from the seed solution.
+    static func growCages(solution: [[Int]], size: Int) -> [Cage] {
         var usedPositions: Set<Position> = []
         var generatedCages: [Cage] = []
 
         var colorIndex = 0
-        
+
         while usedPositions.count < size * size {
             let availablePositions = (0..<size).flatMap { row in
                 (0..<size).compactMap { col in
@@ -295,44 +350,124 @@ class MathMazeGame: ObservableObject {
                     return usedPositions.contains(pos) ? nil : pos
                 }
             }
-            
+
             guard let startPos = availablePositions.randomElement() else { break }
-            
+
             let cageSize = Int.random(in: 1...min(4, availablePositions.count))
             var cagePositions: Set<Position> = [startPos]
             usedPositions.insert(startPos)
-            
+
             // Try to add adjacent positions to form a cage
             for _ in 1..<cageSize {
                 let candidates = cagePositions.flatMap { pos in
-                    getAdjacentPositions(pos).filter { !usedPositions.contains($0) }
+                    getAdjacentPositions(pos, size: size).filter { !usedPositions.contains($0) }
                 }
-                
+
                 if let nextPos = candidates.randomElement() {
                     cagePositions.insert(nextPos)
                     usedPositions.insert(nextPos)
                 }
             }
-            
+
             // Calculate target value and operation
             let values = cagePositions.map { solution[$0.row][$0.col] }
             let (operation, target) = calculateOperationAndTarget(for: values)
-            
+
             let cage = Cage(
                 positions: cagePositions,
                 operation: operation,
                 target: target,
                 colorID: CageColorID.fromIndex(colorIndex)
             )
-            
+
             generatedCages.append(cage)
             colorIndex += 1
         }
-        
-        self.cages = generatedCages
+
+        return generatedCages
     }
-    
-    private func getAdjacentPositions(_ position: Position) -> [Position] {
+
+    /// Makes the cage set more constraining at a cell where `alternate`
+    /// diverges from `seed`, so the alternate solution no longer fits.
+    private static func repair(cages: [Cage], seed: [[Int]], alternate: [[Int]], size: Int) -> [Cage] {
+        var differingCells: [Position] = []
+        for row in 0..<size {
+            for col in 0..<size where alternate[row][col] != seed[row][col] {
+                differingCells.append(Position(row: row, col: col))
+            }
+        }
+
+        // A single-cell cage pins its value, so among differing cells there is
+        // always one covered by a multi-cell cage.
+        guard let cell = differingCells.shuffled().first(where: { pos in
+            cages.first { $0.contains(position: pos) }.map { $0.positions.count > 1 } ?? false
+        }), let cageIndex = cages.firstIndex(where: { $0.contains(position: cell) }) else {
+            return cages
+        }
+
+        let cage = cages[cageIndex]
+        var newCages = cages
+        newCages.remove(at: cageIndex)
+
+        if cage.positions.count == 2 && (cage.operation == .add || cage.operation == .multiply) {
+            // Swap in a more constraining operation on the same two cells.
+            let values = cage.positions.map { seed[$0.row][$0.col] }
+            let high = max(values[0], values[1])
+            let low = min(values[0], values[1])
+            var options: [(Operation, Int)] = [(.subtract, high - low)]
+            if low != 0 && high % low == 0 {
+                options.append((.divide, high / low))
+            }
+            let (operation, target) = options.randomElement()!
+            newCages.append(Cage(positions: cage.positions, operation: operation,
+                                 target: target, colorID: cage.colorID))
+        } else {
+            // Split: pin the differing cell to the seed value (guaranteed to
+            // eliminate this alternate), and re-form what's left of the cage
+            // into connected cages.
+            newCages.append(Cage(positions: [cell], operation: .none,
+                                 target: seed[cell.row][cell.col], colorID: cage.colorID))
+            var remaining = cage.positions
+            remaining.remove(cell)
+            for component in connectedComponents(of: remaining, size: size) {
+                let values = component.map { seed[$0.row][$0.col] }
+                let (operation, target) = calculateOperationAndTarget(for: values)
+                newCages.append(Cage(positions: component, operation: operation,
+                                     target: target, colorID: cage.colorID))
+            }
+        }
+        return newCages
+    }
+
+    private static func connectedComponents(of positions: Set<Position>, size: Int) -> [Set<Position>] {
+        var remaining = positions
+        var components: [Set<Position>] = []
+        while let start = remaining.first {
+            var component: Set<Position> = [start]
+            var queue = [start]
+            remaining.remove(start)
+            while let pos = queue.popLast() {
+                for adjacent in getAdjacentPositions(pos, size: size) where remaining.contains(adjacent) {
+                    remaining.remove(adjacent)
+                    component.insert(adjacent)
+                    queue.append(adjacent)
+                }
+            }
+            components.append(component)
+        }
+        return components
+    }
+
+    /// Reassigns cage colors sequentially — repairs can split cages, so
+    /// renumbering afterwards keeps neighboring colors distinct.
+    private static func recolored(_ cages: [Cage]) -> [Cage] {
+        cages.enumerated().map { index, cage in
+            Cage(positions: cage.positions, operation: cage.operation,
+                 target: cage.target, colorID: CageColorID.fromIndex(index))
+        }
+    }
+
+    private static func getAdjacentPositions(_ position: Position, size: Int) -> [Position] {
         let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
         return directions.compactMap { (dRow, dCol) in
             let newRow = position.row + dRow
@@ -343,8 +478,8 @@ class MathMazeGame: ObservableObject {
             return nil
         }
     }
-    
-    private func calculateOperationAndTarget(for values: [Int]) -> (Operation, Int) {
+
+    private static func calculateOperationAndTarget(for values: [Int]) -> (Operation, Int) {
         if values.count == 1 {
             return (.none, values[0])
         }
@@ -370,26 +505,33 @@ class MathMazeGame: ObservableObject {
     }
     
     static func generateLatinSquare(size: Int) -> [[Int]] {
+        // Randomized backtracking fill: unlike a shuffled cyclic pattern,
+        // this reaches every Latin square, so rows aren't cyclic shifts
+        // of each other that players could exploit.
         var square = Array(repeating: Array(repeating: 0, count: size), count: size)
-        
-        // Generate initial Latin square
-        for i in 0..<size {
-            for j in 0..<size {
-                square[i][j] = ((i + j) % size) + 1
+        var rowUsed = Array(repeating: Set<Int>(), count: size)
+        var colUsed = Array(repeating: Set<Int>(), count: size)
+
+        func fill(_ cell: Int) -> Bool {
+            if cell == size * size { return true }
+            let row = cell / size
+            let col = cell % size
+            for value in (1...size).shuffled() {
+                if !rowUsed[row].contains(value) && !colUsed[col].contains(value) {
+                    square[row][col] = value
+                    rowUsed[row].insert(value)
+                    colUsed[col].insert(value)
+                    if fill(cell + 1) { return true }
+                    square[row][col] = 0
+                    rowUsed[row].remove(value)
+                    colUsed[col].remove(value)
+                }
             }
+            return false
         }
-        
-        // Shuffle rows and columns to add randomness
-        let rowPermutation = (0..<size).shuffled()
-        let colPermutation = (0..<size).shuffled()
-        
-        var shuffledSquare = Array(repeating: Array(repeating: 0, count: size), count: size)
-        for i in 0..<size {
-            for j in 0..<size {
-                shuffledSquare[i][j] = square[rowPermutation[i]][colPermutation[j]]
-            }
-        }
-        
-        return shuffledSquare
+
+        let filled = fill(0)
+        assert(filled, "Latin square fill always succeeds for size >= 1")
+        return square
     }
 }
