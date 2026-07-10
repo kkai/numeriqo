@@ -46,6 +46,19 @@ struct GeneratedPuzzle {
     let size: Int
     let solution: [[Int]]
     let cages: [Cage]
+    /// The tier this puzzle is presented as (the requested tier when
+    /// generated via generatePuzzle(size:difficulty:)).
+    let difficulty: Difficulty
+    /// The raw DifficultyRater score, kept for debugging and calibration.
+    let score: Double
+
+    init(size: Int, solution: [[Int]], cages: [Cage], difficulty: Difficulty = .medium, score: Double = 0) {
+        self.size = size
+        self.solution = solution
+        self.cages = cages
+        self.difficulty = difficulty
+        self.score = score
+    }
 }
 
 struct Cage: Identifiable, Hashable {
@@ -80,7 +93,9 @@ struct Cage: Identifiable, Hashable {
 }
 
 class MathMazeGame: ObservableObject {
-    @Published var grid: [[Int?]]
+    @Published var grid: [[Int?]] {
+        didSet { moveCache.removeAll(keepingCapacity: true) }
+    }
     @Published var cages: [Cage]
     @Published var isCompleted: Bool = false
     @Published var selectedPosition: Position?
@@ -88,16 +103,31 @@ class MathMazeGame: ObservableObject {
     @Published var startTime: Date?
     
     let size: Int
+    let difficulty: Difficulty
     let solution: [[Int]]
     private var timer: Timer?
     private var accumulatedTime: TimeInterval = 0
     private var sessionStartTime: Date?
     private var isTimerRunning: Bool = false
-    
-    init(size: Int) {
-        self.size = size
-        self.grid = Array(repeating: Array(repeating: nil, count: size), count: size)
-        let puzzle = MathMazeGame.generatePuzzle(size: size)
+
+    /// Shares one tuple enumeration across the many isValidMove calls the UI
+    /// makes per render; cages never change after init.
+    private lazy var validationContext = MathMazeSolver.ValidationContext(
+        size: size,
+        cages: cages.map(\.solverCage)
+    )
+    /// Memoized isValidMove results, keyed by (cell, value); cleared whenever
+    /// the grid changes.
+    private var moveCache: [Int: Bool] = [:]
+
+    convenience init(size: Int, difficulty: Difficulty = .medium) {
+        self.init(puzzle: MathMazeGame.generatePuzzle(size: size, difficulty: difficulty))
+    }
+
+    init(puzzle: GeneratedPuzzle) {
+        self.size = puzzle.size
+        self.difficulty = puzzle.difficulty
+        self.grid = Array(repeating: Array(repeating: nil, count: puzzle.size), count: puzzle.size)
         self.solution = puzzle.solution
         self.cages = puzzle.cages
         startTimer()
@@ -125,84 +155,30 @@ class MathMazeGame: ObservableObject {
     func isValidMove(_ value: Int, at position: Position) -> Bool {
         var tempGrid = grid
         tempGrid[position.row][position.col] = value
-        
+
         // Check row constraint
         let row = tempGrid[position.row]
         let rowValues = row.compactMap { $0 }
         if Set(rowValues).count != rowValues.count {
             return false
         }
-        
+
         // Check column constraint
         let colValues = (0..<size).compactMap { tempGrid[$0][position.col] }
         if Set(colValues).count != colValues.count {
             return false
         }
-        
-        // Check cage constraints
-        if let affectedCage = findCage(containing: position) {
-            if !isValidCageState(cage: affectedCage, with: tempGrid) {
-                return false
-            }
+
+        // Exact cage feasibility across the whole board (single propagation
+        // pass — deliberately no stronger, or the pad would leak the unique
+        // solution).
+        let key = (position.row * size + position.col) * (size + 1) + value
+        if let cached = moveCache[key] {
+            return cached
         }
-        
-        return true
-    }
-    
-    private func findCage(containing position: Position) -> Cage? {
-        return cages.first { $0.contains(position: position) }
-    }
-    
-    private func isValidCageState(cage: Cage, with grid: [[Int?]]) -> Bool {
-        let values: [Int] = cage.positions.compactMap { pos in
-            guard pos.row < grid.count && pos.col < grid[pos.row].count else { return nil }
-            return grid[pos.row][pos.col]
-        }
-        
-        let emptyCount = cage.positions.count - values.count
-        
-        // If cage is complete, validate exactly
-        if emptyCount == 0 {
-            return cage.operation.calculate(values) == cage.target
-        }
-        
-        // If cage is incomplete, check if it's still solvable
-        return isCageStillSolvable(cage: cage, filledValues: values, emptyCount: emptyCount)
-    }
-    
-    private func isCageStillSolvable(cage: Cage, filledValues: [Int], emptyCount: Int) -> Bool {
-        // For single empty cell, check if any valid number can complete the cage
-        if emptyCount == 1 {
-            for candidate in 1...size {
-                var testValues = filledValues
-                testValues.append(candidate)
-                if cage.operation.calculate(testValues) == cage.target {
-                    return true
-                }
-            }
-            return false
-        }
-        
-        // For multiple empty cells, use more permissive validation
-        // This is a simplified check - more complex logic could be added later
-        switch cage.operation {
-        case .add:
-            let currentSum = filledValues.reduce(0, +)
-            let remainingSum = cage.target - currentSum
-            // Check if remaining sum is achievable with available numbers
-            return remainingSum >= emptyCount && remainingSum <= emptyCount * size
-        case .multiply:
-            let currentProduct = filledValues.reduce(1, *)
-            // Basic check: if current product already exceeds target, invalid
-            return currentProduct <= cage.target && cage.target % currentProduct == 0
-        case .subtract, .divide:
-            // For subtraction and division with multiple empty cells, 
-            // be more permissive during play
-            return emptyCount == 1 || filledValues.count <= 1
-        case .none:
-            // Single cell cages should be complete or have specific target
-            return emptyCount == 0 || (emptyCount == 1 && cage.target >= 1 && cage.target <= size)
-        }
+        let result = validationContext?.isLocallyConsistent(partial: tempGrid) ?? true
+        moveCache[key] = result
+        return result
     }
     
     private func checkCompletion() {
@@ -219,7 +195,7 @@ class MathMazeGame: ObservableObject {
             stopTimer()
             // Save best time if applicable
             if let completionTime = elapsedTime as TimeInterval? {
-                BestTimesManager.shared.updateBestTime(for: size, time: completionTime)
+                BestTimesManager.shared.updateBestTime(for: size, difficulty: difficulty, time: completionTime)
             }
         }
     }
@@ -293,10 +269,50 @@ class MathMazeGame: ObservableObject {
         return true
     }
     
+    /// Generates a puzzle in the requested difficulty band: retries natural
+    /// generation until the solver-derived score lands in the band, falling
+    /// back to the nearest miss so a puzzle is always returned. Fallback
+    /// puzzles are still labeled with the requested tier (mismatches are
+    /// rare and land in an adjacent band).
+    static func generatePuzzle(size: Int, difficulty: Difficulty) -> GeneratedPuzzle {
+        let maxAttempts = size <= 6 ? 20 : 12
+        var best: GeneratedPuzzle?
+        var bestDistance = Double.infinity
+
+        for _ in 0..<maxAttempts {
+            let candidate = generatePuzzle(size: size)
+            if candidate.difficulty == difficulty {
+                return candidate
+            }
+            let distance = bandDistance(score: candidate.score, target: difficulty, size: size)
+            if distance < bestDistance {
+                bestDistance = distance
+                best = candidate
+            }
+        }
+
+        let fallback = best!
+        #if DEBUG
+        print("[MathMaze] size \(size): no \(difficulty.rawValue) puzzle in \(maxAttempts) attempts; using nearest (score \(fallback.score), rated \(fallback.difficulty.rawValue))")
+        #endif
+        return GeneratedPuzzle(size: size, solution: fallback.solution, cages: fallback.cages,
+                               difficulty: difficulty, score: fallback.score)
+    }
+
+    /// Distance from a score to the target band's interval (0 when inside).
+    private static func bandDistance(score: Double, target: Difficulty, size: Int) -> Double {
+        guard let t = DifficultyRater.thresholds[size] else { return 0 }
+        switch target {
+        case .easy: return max(0, score - t.easyMax)
+        case .medium: return max(t.easyMax - score, score - t.mediumMax, 0)
+        case .hard: return max(0, t.mediumMax - score)
+        }
+    }
+
     /// Generates a puzzle with a verified unique solution: grows random cages
     /// over a random Latin square, then repairs the cage set (constraining
     /// operations or splitting cages) until the solver proves exactly one
-    /// solution exists.
+    /// solution exists. The result carries its natural (rated) difficulty.
     static func generatePuzzle(size: Int) -> GeneratedPuzzle {
         let maxRepairsPerSquare = 10
         let maxRegenerations = 20
@@ -322,7 +338,11 @@ class MathMazeGame: ObservableObject {
                         print("[MathMaze] size \(size): \(repairCount) repairs, \(regenerationCount) regenerations")
                     }
                     #endif
-                    return GeneratedPuzzle(size: size, solution: solution, cages: recolored(cages))
+                    let finalCages = recolored(cages)
+                    let score = DifficultyRater.score(size: size, cages: finalCages.map(\.solverCage)) ?? 0
+                    return GeneratedPuzzle(size: size, solution: solution, cages: finalCages,
+                                           difficulty: DifficultyRater.band(forScore: score, size: size),
+                                           score: score)
                 }
                 // Zero solutions would mean the seed itself no longer fits —
                 // a generation bug; bail to a fresh square.
