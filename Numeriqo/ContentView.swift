@@ -1,8 +1,6 @@
 //
 //  ContentView.swift
-//  gengen
-//
-//  Created by kai on 27.07.25.
+//  Numeriqo
 //
 
 import SwiftUI
@@ -18,75 +16,97 @@ struct ContentView: View {
     @State private var selectedSize: Int = 4
     @State private var selectedDifficulty: Difficulty = .medium
     @State private var mathMazeGame: MathMazeGame?
-    
-    var body: some View {
-        #if os(macOS)
-        // macOS-specific layout without NavigationView
-        VStack {
-            #if NUMERIQO_PRO
-            Text("Numeriqo Pro")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.top)
-            #else
-            Text("Numeriqo")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.top)
-            #endif
-            
-            Group {
-                switch gameState {
-                case .sizeSelection:
-                    SizeSelectionView(
-                        selectedSize: $selectedSize,
-                        selectedDifficulty: $selectedDifficulty,
-                        onStartGame: startGame
-                    )
-                case .playing:
-                    if let game = mathMazeGame {
-                        MathMazeGameView(
-                            game: game,
-                            onNewGame: { gameState = .sizeSelection }
-                        )
-                    }
-                }
-            }
-            .frame(maxWidth: 1000)
-            .frame(maxHeight: .infinity)
-        }
-        .frame(minWidth: 800, minHeight: 900)
-        .background(ThemeColors.primaryBackground)
+
+    private var appTitle: String {
+        #if NUMERIQO_PRO
+        "Numeriqo Pro"
         #else
-        // iOS/iPadOS layout with NavigationView
-        NavigationView {
-            Group {
-                switch gameState {
-                case .sizeSelection:
-                    SizeSelectionView(
-                        selectedSize: $selectedSize,
-                        selectedDifficulty: $selectedDifficulty,
-                        onStartGame: startGame
-                    )
-                case .playing:
-                    if let game = mathMazeGame {
-                        MathMazeGameView(
-                            game: game,
-                            onNewGame: { gameState = .sizeSelection }
-                        )
-                    }
-                }
-            }
-            #if NUMERIQO_PRO
-            .navigationTitle("Numeriqo Pro")
-            #else
-            .navigationTitle("Numeriqo")
-            #endif
-        }
-        .navigationViewStyle(StackNavigationViewStyle())
+        "Numeriqo"
         #endif
     }
-    
+
+    var body: some View {
+        #if os(macOS)
+        // macOS-specific layout
+        ZStack {
+            ThemeColors.backgroundGradient.ignoresSafeArea()
+
+            if gameState == .sizeSelection {
+                EmbossedGlyphBackground()
+                    .frame(maxHeight: 500)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 60)
+            }
+
+            VStack {
+                GradientTitleView(text: appTitle, fontSize: 40)
+                    .padding(.top)
+
+                Group {
+                    switch gameState {
+                    case .sizeSelection:
+                        SizeSelectionView(
+                            selectedSize: $selectedSize,
+                            selectedDifficulty: $selectedDifficulty,
+                            onStartGame: startGame
+                        )
+                    case .playing:
+                        if let game = mathMazeGame {
+                            MathMazeGameView(
+                                game: game,
+                                onNewGame: { gameState = .sizeSelection }
+                            )
+                        }
+                    }
+                }
+                .frame(maxWidth: 1000)
+                .frame(maxHeight: .infinity)
+            }
+        }
+        .frame(minWidth: 800, minHeight: 900)
+        #else
+        // iOS/iPadOS/visionOS layout
+        ZStack {
+            ThemeColors.backgroundGradient.ignoresSafeArea()
+
+            if gameState == .sizeSelection {
+                GeometryReader { geometry in
+                    EmbossedGlyphBackground()
+                        .frame(height: geometry.size.height * 0.52)
+                        .padding(.top, geometry.size.height * 0.10)
+                }
+                .ignoresSafeArea(edges: .bottom)
+            }
+
+            VStack(spacing: 0) {
+                GradientTitleView(
+                    text: appTitle,
+                    fontSize: gameState == .sizeSelection ? 46 : 34
+                )
+                .padding(.top, gameState == .sizeSelection ? 12 : 0)
+
+                Group {
+                    switch gameState {
+                    case .sizeSelection:
+                        SizeSelectionView(
+                            selectedSize: $selectedSize,
+                            selectedDifficulty: $selectedDifficulty,
+                            onStartGame: startGame
+                        )
+                    case .playing:
+                        if let game = mathMazeGame {
+                            MathMazeGameView(
+                                game: game,
+                                onNewGame: { gameState = .sizeSelection }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        #endif
+    }
+
     private func startGame() {
         mathMazeGame = MathMazeGame(size: selectedSize, difficulty: selectedDifficulty)
         gameState = .playing
@@ -110,11 +130,20 @@ struct SizeSelectionView: View {
     #endif
 
     var body: some View {
-        VStack(spacing: 20) {
-            titleView
+        VStack(spacing: 18) {
+            Spacer(minLength: 0)
+
+            Text("Choose Puzzle Size")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(ThemeColors.primaryText)
+
             sizeSelectionGrid
-            difficultyPicker
+
+            DifficultyCapsulePicker(selection: $selectedDifficulty)
+                .padding(.horizontal, 40)
+
             startGameButton
+                .padding(.top, 6)
         }
         .padding()
         #if os(visionOS)
@@ -122,136 +151,27 @@ struct SizeSelectionView: View {
         #endif
     }
 
-    private var difficultyPicker: some View {
-        Picker("Difficulty", selection: $selectedDifficulty) {
-            ForEach(Difficulty.allCases) { difficulty in
-                Text(difficulty.displayName).tag(difficulty)
-            }
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-        #if os(visionOS)
-        .controlSize(.large)
-        #endif
-    }
-    
-    private var titleView: some View {
-        Text("Choose Puzzle Size")
-            #if os(visionOS)
-            .font(.system(size: 48, weight: .bold))
-            #else
-            .font(.largeTitle)
-            #endif
-            .fontWeight(.bold)
-    }
-    
     private var sizeSelectionGrid: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 15) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
             ForEach(availableSizes, id: \.self) { size in
-                sizeButton(for: size)
+                SizeCardView(
+                    size: size,
+                    isSelected: selectedSize == size,
+                    bestTime: BestTimesManager.shared.getBestTime(for: size, difficulty: selectedDifficulty),
+                    action: { selectedSize = size }
+                )
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 4)
     }
-    
-    private func sizeButton(for size: Int) -> some View {
-        Button(action: {
-            selectedSize = size
-        }) {
-            VStack(spacing: 4) {
-                Text("\(size)×\(size)")
-                    #if os(visionOS)
-                    .font(.title)
-                    #else
-                    .font(.title2)
-                    #endif
-                    .fontWeight(.semibold)
 
-                bestTimeView(for: size)
-            }
-            .frame(maxWidth: .infinity)
-            #if os(visionOS)
-            .frame(height: 110)
-            #else
-            .frame(height: 100)
-            #endif
-            .background(selectedSize == size ? ThemeColors.buttonBackgroundSelected : ThemeColors.unselectedButtonBackground)
-            .foregroundColor(selectedSize == size ? .white : .primary)
-            #if os(visionOS)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .contentShape(RoundedRectangle(cornerRadius: 20))
-            #else
-            .cornerRadius(12)
-            #endif
-        }
-        #if os(macOS)
-        .buttonStyle(.plain)
-        #elseif os(visionOS)
-        .buttonStyle(NoEffectButtonStyle())
-        #endif
-    }
-    
-    private func bestTimeView(for size: Int) -> some View {
-        Group {
-            if let bestTime = BestTimesManager.shared.getBestTime(for: size, difficulty: selectedDifficulty) {
-                HStack(spacing: 4) {
-                    Image(systemName: "trophy.fill")
-                        #if os(visionOS)
-                        .font(.headline)
-                        #else
-                        .font(.caption2)
-                        #endif
-                        .foregroundColor(selectedSize == size ? .yellow : .blue)
-                    Text(BestTimesManager.formatTime(bestTime))
-                        #if os(visionOS)
-                        .font(.headline)
-                        #else
-                        .font(.caption2)
-                        #endif
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedSize == size ? .white : .primary)
-                }
-            } else {
-                Text("No record")
-                    #if os(visionOS)
-                    .font(.headline)
-                    #else
-                    .font(.caption2)
-                    #endif
-                    .foregroundColor(selectedSize == size ? .white.opacity(0.7) : ThemeColors.secondaryText)
-            }
-        }
-    }
-    
     private var startGameButton: some View {
         Button("Start Game") {
             onStartGame()
         }
-        #if os(visionOS)
-        .font(.title)
-        #else
-        .font(.title2)
-        #endif
-        .fontWeight(.semibold)
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        #if os(visionOS)
-        .frame(height: 70)
-        #else
-        .frame(height: 50)
-        #endif
-        .background(ThemeColors.buttonBackgroundSelected)
-        #if os(visionOS)
-        .cornerRadius(35)
-        #else
-        .cornerRadius(12)
-        #endif
-        .padding(.horizontal)
-        #if os(macOS) || os(visionOS)
-        .buttonStyle(.plain)
-        #endif
+        .buttonStyle(GradientPillButtonStyle())
+        .padding(.horizontal, 8)
     }
-    
 }
 
 #Preview {
