@@ -1,8 +1,6 @@
 //
 //  MathMazeGameView.swift
-//  gengen
-//
-//  Created by kai on 27.07.25.
+//  Numeriqo
 //
 
 import SwiftUI
@@ -15,7 +13,7 @@ struct MathMazeGameView: View {
     #if os(iOS)
     @Environment(\.scenePhase) private var scenePhase
     #endif
-    
+
     var body: some View {
         Group {
             #if os(visionOS)
@@ -29,7 +27,7 @@ struct MathMazeGameView: View {
                     }
                 )
                 .frame(width: 650, height: 650)  // Reduced to prevent bottom cutoff
-                
+
                 // Right side: All controls (New Game, Timer, Number input)
                 VStack(spacing: 30) {
                     // New Game button at top
@@ -40,23 +38,15 @@ struct MathMazeGameView: View {
                     .fontWeight(.semibold)
                     .frame(width: 200, height: 55)
                     .buttonStyle(.borderedProminent)
-                    
+
                     // Timer display
-                    HStack {
-                        Image(systemName: "timer")
-                            .foregroundColor(ThemeColors.secondaryText)
-                            .font(.title)
-                        Text(BestTimesManager.formatTime(game.elapsedTime))
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .monospacedDigit()
-                    }
-                    .padding(.bottom, 5)
-                    
+                    timerView
+                        .padding(.bottom, 5)
+
                     Text("Select Number")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                    
+
                     VisionProNumberInputView(game: game)
                 }
                 .frame(width: 300)
@@ -65,53 +55,48 @@ struct MathMazeGameView: View {
             .padding(40)
             #else
             // Other platforms: Vertical layout
-            VStack(spacing: 20) {
-                // Timer display
-                HStack {
-                    Image(systemName: "timer")
-                        .foregroundColor(ThemeColors.secondaryText)
-                    Text(BestTimesManager.formatTime(game.elapsedTime))
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                }
-                .padding(.horizontal)
-                
-                // Game grid
+            VStack(spacing: 14) {
+                timerView
+                    .padding(.top, 4)
+
+                // Game grid in a soft rounded container
                 GameGridView(
                     game: game,
                     onCellTap: { position in
                         game.selectedPosition = position
                     }
                 )
-                
+                .background(
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(ThemeColors.gridContainerFill)
+                        .shadow(color: ThemeColors.cardShadow, radius: 8, x: 0, y: 5)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(ThemeColors.gridContainerStroke, lineWidth: 2.5)
+                )
+                .padding(.horizontal, 12)
+
+                Spacer(minLength: 0)
+
                 // Number input buttons
                 NumberInputView(game: game)
-                
+
                 // Controls
                 Button("New Game") {
                     onNewGame()
                 }
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .buttonStyle(GradientPillButtonStyle(height: 50))
                 #if os(macOS)
-                .frame(width: 200, height: 44)
+                .frame(width: 260)
                 #else
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .padding(.horizontal, 20)
                 #endif
-                .background(ThemeColors.buttonBackgroundSelected)
-                .cornerRadius(8)
-                .padding(.horizontal)
-                #if os(macOS)
-                .buttonStyle(.plain)
-                #endif
+                .padding(.bottom, 8)
             }
             #if os(macOS)
             .frame(maxWidth: 800)
             .padding()
-            .background(ThemeColors.primaryBackground)
             #endif
             #endif
         }
@@ -151,33 +136,47 @@ struct MathMazeGameView: View {
         }
         #endif
     }
+
+    private var timerView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "clock")
+            Text(BestTimesManager.formatTime(game.elapsedTime))
+                .monospacedDigit()
+        }
+        #if os(visionOS)
+        .font(.system(size: 30, weight: .semibold, design: .rounded))
+        #else
+        .font(.system(size: 19, weight: .semibold, design: .rounded))
+        #endif
+        .foregroundColor(ThemeColors.cageLabel)
+    }
 }
 
 struct GameGridView: View {
     @ObservedObject var game: MathMazeGame
     let onCellTap: (Position) -> Void
-    
+
     var body: some View {
         GeometryReader { geometry in
             let cellSize = optimalCellSize(for: game.size, in: geometry.size)
-            
+
             #if os(visionOS)
             // For visionOS, calculate centering offset
             let gridTotalSize = CGFloat(game.size) * cellSize + CGFloat(game.size - 1)
             let xOffset = (geometry.size.width - gridTotalSize) / 2
             let yOffset = (geometry.size.height - gridTotalSize) / 2
-            
+
             ZStack {
-                // Cage backgrounds
+                // Cage tiles
                 ForEach(game.cages) { cage in
                     CageBackgroundView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
                 }
-                
+
                 // Cage labels
                 ForEach(game.cages) { cage in
                     CageLabelView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
                 }
-                
+
                 // Grid cells - centered properly
                 VStack(spacing: 1) {
                     ForEach(0..<game.size, id: \.self) { row in
@@ -201,18 +200,18 @@ struct GameGridView: View {
             let gridTotalSize = CGFloat(game.size) * cellSize + CGFloat(game.size - 1)
             let xOffset = (geometry.size.width - gridTotalSize) / 2
             let yOffset = (geometry.size.height - gridTotalSize) / 2
-            
+
             ZStack {
-                // Cage backgrounds
+                // Cage tiles
                 ForEach(game.cages) { cage in
                     CageBackgroundView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
                 }
-                
+
                 // Cage labels
                 ForEach(game.cages) { cage in
                     CageLabelView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
                 }
-                
+
                 // Grid cells - centered properly
                 VStack(spacing: 1) {
                     ForEach(0..<game.size, id: \.self) { row in
@@ -234,16 +233,16 @@ struct GameGridView: View {
             #else
             // iOS/iPadOS - use existing layout
             ZStack {
-                // Cage backgrounds
+                // Cage tiles
                 ForEach(game.cages) { cage in
                     CageBackgroundView(cage: cage, cellSize: cellSize, game: game)
                 }
-                
+
                 // Cage labels
                 ForEach(game.cages) { cage in
                     CageLabelView(cage: cage, cellSize: cellSize, game: game)
                 }
-                
+
                 // Grid cells
                 VStack(spacing: 1) {
                     ForEach(0..<game.size, id: \.self) { row in
@@ -266,13 +265,13 @@ struct GameGridView: View {
         .aspectRatio(1, contentMode: .fit)
         .padding()
     }
-    
+
     private func optimalCellSize(for boardSize: Int, in containerSize: CGSize) -> CGFloat {
         #if os(visionOS)
         // Vision Pro: Optimized sizes for maximum readability
         let maxSize = min(containerSize.width, containerSize.height) - 40 // reduced padding for larger cells
         let calculatedSize = maxSize / CGFloat(boardSize)
-        
+
         // Increased cell sizes for better visibility in visionOS
         switch boardSize {
         case 3:
@@ -296,7 +295,7 @@ struct GameGridView: View {
         // macOS: Optimized sizes for better readability
         let maxSize = min(containerSize.width, containerSize.height) - 20
         let calculatedSize = maxSize / CGFloat(boardSize)
-        
+
         switch boardSize {
         case 3:
             return min(calculatedSize, 180)
@@ -328,7 +327,7 @@ struct CageLabelView: View {
     @ObservedObject var game: MathMazeGame
     var xOffset: CGFloat = 0
     var yOffset: CGFloat = 0
-    
+
     var body: some View {
         // Cage label (operation and target)
         if let topLeft = cage.positions.min(by: { $0.row < $1.row || ($0.row == $1.row && $0.col < $1.col) }) {
@@ -343,17 +342,16 @@ struct CageLabelView: View {
                 )
             #else
             Text("\(cage.target)\(cage.operation.rawValue)")
-                .font(optimalLabelFont(for: cellSize))
-                .fontWeight(.bold)
+                .font(.system(size: min(14, cellSize * 0.26), weight: .bold, design: .rounded))
                 .foregroundColor(ThemeColors.cageLabel)
                 .position(
-                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.50,
-                    y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15
+                    x: CGFloat(topLeft.col) * (cellSize + 1) + cellSize * 0.34,
+                    y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.20
                 )
             #endif
         }
     }
-    
+
     private func optimalLabelFont(for cellSize: CGFloat) -> Font {
         #if os(visionOS)
         // Vision Pro: Enhanced fonts for optimal readability
@@ -395,31 +393,32 @@ struct CellView: View {
     @ObservedObject var game: MathMazeGame
     let cellSize: CGFloat
     let onTap: (Position) -> Void
-    
+
     var body: some View {
         ZStack {
             // Transparent cell background
             Rectangle()
                 .fill(Color.clear)
-            
+
             // Number display
             if let value = game.getValue(at: position) {
                 Text("\(value)")
                     .font(optimalNumberFont(for: cellSize))
-                    .fontWeight(.semibold)
                     .foregroundColor(
                         game.isValidMove(value, at: position) ? ThemeColors.primaryText : ThemeColors.errorText
                     )
             }
-            
+
             // Selection highlight
             if game.selectedPosition == position {
-                Rectangle()
+                RoundedRectangle(cornerRadius: cellSize * 0.16)
                     .fill(ThemeColors.selectionHighlight)
                     .overlay(
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: cellSize * 0.16)
                             .stroke(ThemeColors.selectionBorder, lineWidth: 2)
                     )
+                    .shadow(color: ThemeColors.accentGlow, radius: 5)
+                    .padding(4)
             }
         }
         .contentShape(Rectangle())
@@ -427,43 +426,43 @@ struct CellView: View {
             onTap(position)
         }
     }
-    
+
     private func optimalNumberFont(for cellSize: CGFloat) -> Font {
         #if os(visionOS)
         // Vision Pro: Optimized number fonts for maximum clarity
         if cellSize >= 180 {
-            return .system(size: 72, weight: .bold)
+            return .system(size: 72, weight: .bold, design: .rounded)
         } else if cellSize >= 150 {
-            return .system(size: 60, weight: .bold)
+            return .system(size: 60, weight: .bold, design: .rounded)
         } else if cellSize >= 120 {
-            return .system(size: 52, weight: .bold)
+            return .system(size: 52, weight: .bold, design: .rounded)
         } else if cellSize >= 100 {
-            return .system(size: 44, weight: .semibold)
+            return .system(size: 44, weight: .semibold, design: .rounded)
         } else if cellSize >= 80 {
-            return .system(size: 36, weight: .semibold)
+            return .system(size: 36, weight: .semibold, design: .rounded)
         } else if cellSize >= 60 {
-            return .system(size: 28, weight: .semibold)
+            return .system(size: 28, weight: .semibold, design: .rounded)
         } else {
-            return .system(size: 24, weight: .semibold)
+            return .system(size: 24, weight: .semibold, design: .rounded)
         }
         #elseif os(macOS)
         // macOS: Scaled number fonts for better readability
         if cellSize >= 140 {
-            return .system(size: 48, weight: .semibold)
+            return .system(size: 48, weight: .semibold, design: .rounded)
         } else if cellSize >= 110 {
-            return .system(size: 40, weight: .semibold)
+            return .system(size: 40, weight: .semibold, design: .rounded)
         } else if cellSize >= 90 {
-            return .system(size: 32, weight: .semibold)
+            return .system(size: 32, weight: .semibold, design: .rounded)
         } else if cellSize >= 70 {
-            return .system(size: 26, weight: .semibold)
+            return .system(size: 26, weight: .semibold, design: .rounded)
         } else if cellSize >= 50 {
-            return .system(size: 20, weight: .semibold)
+            return .system(size: 20, weight: .semibold, design: .rounded)
         } else {
-            return .system(size: 18, weight: .semibold)
+            return .system(size: 18, weight: .semibold, design: .rounded)
         }
         #else
-        // iOS/iPadOS: Use existing logic
-        return .title2
+        // iOS/iPadOS
+        return .system(size: min(30, cellSize * 0.42), weight: .semibold, design: .rounded)
         #endif
     }
 }
@@ -474,109 +473,52 @@ struct CageBackgroundView: View {
     @ObservedObject var game: MathMazeGame
     var xOffset: CGFloat = 0
     var yOffset: CGFloat = 0
-    
-    var body: some View {
-        ZStack {
-            // Background fill for entire cage as a single shape
-            Path { path in
-                for position in cage.positions {
-                    #if os(visionOS) || os(macOS)
-                    let x = CGFloat(position.col) * (cellSize + 1) - 0.5 + xOffset
-                    let y = CGFloat(position.row) * (cellSize + 1) - 0.5 + yOffset
-                    #else
-                    let x = CGFloat(position.col) * (cellSize + 1) - 0.5
-                    let y = CGFloat(position.row) * (cellSize + 1) - 0.5
-                    #endif
-                    path.addRect(CGRect(x: x, y: y, width: cellSize + 2, height: cellSize + 2))
-                }
-            }
-            .fill(cage.color)
-            
-            // Single border around the entire cage
-            CageOutlineView(cage: cage, cellSize: cellSize, xOffset: xOffset, yOffset: yOffset)
-        }
-    }
-}
 
-struct CageOutlineView: View {
-    let cage: Cage
-    let cellSize: CGFloat
-    var xOffset: CGFloat = 0
-    var yOffset: CGFloat = 0
-    
     var body: some View {
-        Path { path in
-            // Draw border segments around the cage perimeter
-            for position in cage.positions {
-                #if os(visionOS) || os(macOS)
-                let x = CGFloat(position.col) * (cellSize + 1) + xOffset
-                let y = CGFloat(position.row) * (cellSize + 1) + yOffset
-                #else
-                let x = CGFloat(position.col) * (cellSize + 1)
-                let y = CGFloat(position.row) * (cellSize + 1)
-                #endif
-                
-                // Check each side of the cell to see if it's on the cage boundary
-                
-                // Top border
-                let topNeighbor = Position(row: position.row - 1, col: position.col)
-                if !cage.positions.contains(topNeighbor) {
-                    path.move(to: CGPoint(x: x - 1, y: y))
-                    path.addLine(to: CGPoint(x: x + cellSize + 1, y: y))
-                }
-                
-                // Bottom border
-                let bottomNeighbor = Position(row: position.row + 1, col: position.col)
-                if !cage.positions.contains(bottomNeighbor) {
-                    path.move(to: CGPoint(x: x - 1, y: y + cellSize))
-                    path.addLine(to: CGPoint(x: x + cellSize + 1, y: y + cellSize))
-                }
-                
-                // Left border
-                let leftNeighbor = Position(row: position.row, col: position.col - 1)
-                if !cage.positions.contains(leftNeighbor) {
-                    path.move(to: CGPoint(x: x, y: y - 1))
-                    path.addLine(to: CGPoint(x: x, y: y + cellSize + 1))
-                }
-                
-                // Right border
-                let rightNeighbor = Position(row: position.row, col: position.col + 1)
-                if !cage.positions.contains(rightNeighbor) {
-                    path.move(to: CGPoint(x: x + cellSize, y: y - 1))
-                    path.addLine(to: CGPoint(x: x + cellSize, y: y + cellSize + 1))
-                }
-            }
+        let shape = CageShape(
+            positions: cage.positions,
+            cellSize: cellSize,
+            xOffset: xOffset,
+            yOffset: yOffset,
+            inset: 2.5,
+            cornerRadius: min(10, cellSize * 0.18)
+        )
+
+        ZStack {
+            shape
+                .fill(cage.color)
+            shape
+                .stroke(ThemeColors.cageBorder, lineWidth: 1.8)
+                .shadow(color: ThemeColors.accentGlow.opacity(0.35), radius: 3)
         }
-        .stroke(ThemeColors.cageBorder, lineWidth: 3)
     }
 }
 
 struct NumberInputView: View {
     @ObservedObject var game: MathMazeGame
-    
+
+    #if os(macOS)
+    private let buttonSize: CGFloat = 64
+    #elseif os(visionOS)
+    private let buttonSize: CGFloat = 76
+    #else
+    private let buttonSize: CGFloat = 52
+    #endif
+
     var body: some View {
-        VStack(spacing: 15) {
+        VStack(spacing: 14) {
             Text("Select a cell, then choose a number:")
                 #if os(visionOS)
-                .font(.headline)
+                .font(.system(size: 18, weight: .medium, design: .rounded))
                 #else
-                .font(.caption)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 #endif
                 .foregroundColor(ThemeColors.secondaryText)
-            
-            #if os(macOS)
-            // macOS layout - always use grid layout for better appearance
+
+            #if os(macOS) || os(visionOS)
+            // Grid layout for better appearance on large screens
             let columns = game.size <= 5 ? game.size + 1 : (game.size + 1) / 2 + 1
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(70), spacing: 10), count: columns), spacing: 10) {
-                clearButton
-                ForEach(1...game.size, id: \.self) { number in
-                    numberButton(for: number)
-                }
-            }
-            #elseif os(visionOS)
-            // visionOS layout - use grid layout with larger buttons
-            let columns = game.size <= 5 ? game.size + 1 : (game.size + 1) / 2 + 1
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(80), spacing: 15), count: columns), spacing: 15) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(buttonSize), spacing: 12), count: columns), spacing: 12) {
                 clearButton
                 ForEach(1...game.size, id: \.self) { number in
                     numberButton(for: number)
@@ -614,89 +556,51 @@ struct NumberInputView: View {
         }
         .padding(.horizontal)
     }
-    
+
     private var clearButton: some View {
         Button(action: {
             if let selected = game.selectedPosition {
                 game.setValue(nil, at: selected)
             }
         }) {
-            Rectangle()
-                .fill(Color.clear)
-                #if os(macOS)
-                .frame(width: 70, height: 70)
-                #elseif os(visionOS)
-                .frame(width: 80, height: 80)
-                #else
-                .frame(width: 50, height: 50)
-                #endif
-                .background(game.selectedPosition != nil ? Color.red : ThemeColors.buttonBackgroundDisabled)
-                #if os(visionOS)
-                .cornerRadius(40)
-                #else
-                .cornerRadius(8)
-                #endif
+            RoundedRectangle(cornerRadius: buttonSize * 0.28)
+                .fill(ThemeColors.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: buttonSize * 0.28)
+                        .stroke(ThemeColors.cardStroke, lineWidth: 1)
+                )
+                .shadow(color: ThemeColors.cardShadow, radius: 4, x: 0, y: 2)
+                .frame(width: buttonSize, height: buttonSize)
+                .opacity(game.selectedPosition != nil ? 1 : 0.55)
         }
+        .buttonStyle(NoEffectButtonStyle())
         .disabled(game.selectedPosition == nil)
-        #if os(macOS)
-        .buttonStyle(.plain)
-        #endif
     }
-    
+
     private func numberButton(for number: Int) -> some View {
-        Button(action: {
+        // With no cell selected the pad stays bright (taps are no-ops);
+        // once a cell is selected, invalid digits dim out.
+        NumberPadButton(
+            label: "\(number)",
+            isEnabled: game.selectedPosition == nil || canEnterNumber(number),
+            size: buttonSize
+        ) {
             if let selected = game.selectedPosition {
                 game.setValue(number, at: selected)
             }
-        }) {
-            Text("\(number)")
-                #if os(visionOS)
-                .font(.title)
-                #else
-                .font(.title2)
-                #endif
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                #if os(macOS)
-                .frame(width: 70, height: 70)
-                #elseif os(visionOS)
-                .frame(width: 80, height: 80)
-                #else
-                .frame(width: 50, height: 50)
-                #endif
-                .background(buttonColor(for: number))
-                #if os(visionOS)
-                .cornerRadius(40)
-                #else
-                .cornerRadius(8)
-                #endif
         }
-        .disabled(!canEnterNumber(number))
-        #if os(macOS)
-        .buttonStyle(.plain)
-        #endif
     }
-    
+
     private func canEnterNumber(_ number: Int) -> Bool {
         guard let selected = game.selectedPosition else { return false }
         return game.isValidMove(number, at: selected)
-    }
-    
-    private func buttonColor(for number: Int) -> Color {
-        guard let selected = game.selectedPosition else { return ThemeColors.buttonBackgroundDisabled }
-        
-        if game.isValidMove(number, at: selected) {
-            return ThemeColors.buttonBackgroundSelected
-        } else {
-            return ThemeColors.buttonBackgroundDisabled
-        }
     }
 }
 
 // Vision Pro specific number input view (vertical layout)
 struct VisionProNumberInputView: View {
     @ObservedObject var game: MathMazeGame
-    
+
     var body: some View {
         VStack(spacing: 20) {
             // Clear button at top with enhanced size
@@ -713,7 +617,7 @@ struct VisionProNumberInputView: View {
             .buttonStyle(.borderedProminent)
             .disabled(game.selectedPosition == nil)
             .tint(.red)
-            
+
             // Number buttons in optimized grid layout with larger sizes
             LazyVGrid(columns: [
                 GridItem(.fixed(85)),
@@ -738,7 +642,7 @@ struct VisionProNumberInputView: View {
             }
         }
     }
-    
+
     private func canEnterNumber(_ number: Int) -> Bool {
         guard let selected = game.selectedPosition else { return false }
         return game.isValidMove(number, at: selected)
