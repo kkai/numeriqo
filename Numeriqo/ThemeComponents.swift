@@ -56,9 +56,15 @@ struct EmbossedGlyphBackground: View {
     ]
 
     private var glyphStyle: AnyShapeStyle {
+        #if os(macOS)
+        // macOS composites inner shadows over translucent fills as a dark
+        // wash, so use the plain emboss color there.
+        return AnyShapeStyle(ThemeColors.embossGlyph)
+        #else
         let highlight = ShadowStyle.inner(color: .white.opacity(0.7), radius: 1.5, x: 0, y: 1.5)
         let lowlight = ShadowStyle.inner(color: ThemeColors.embossGlyphShadow.opacity(0.5), radius: 2, x: 0, y: -1.5)
         return AnyShapeStyle(ThemeColors.embossGlyph.shadow(highlight).shadow(lowlight))
+        #endif
     }
 
     var body: some View {

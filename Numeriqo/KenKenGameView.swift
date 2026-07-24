@@ -34,10 +34,8 @@ struct MathMazeGameView: View {
                     Button("New Game") {
                         onNewGame()
                     }
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .frame(width: 200, height: 55)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(GradientPillButtonStyle(height: 55))
+                    .frame(width: 240)
 
                     // Timer display
                     timerView
@@ -94,8 +92,8 @@ struct MathMazeGameView: View {
                 #endif
                 .padding(.bottom, 8)
             }
+            .frame(maxWidth: 620)
             #if os(macOS)
-            .frame(maxWidth: 800)
             .padding()
             #endif
             #endif
@@ -292,28 +290,9 @@ struct GameGridView: View {
             return calculatedSize
         }
         #elseif os(macOS)
-        // macOS: Optimized sizes for better readability
-        let maxSize = min(containerSize.width, containerSize.height) - 20
-        let calculatedSize = maxSize / CGFloat(boardSize)
-
-        switch boardSize {
-        case 3:
-            return min(calculatedSize, 180)
-        case 4:
-            return min(calculatedSize, 140)
-        case 5:
-            return min(calculatedSize, 110)
-        case 6:
-            return min(calculatedSize, 90)
-        case 7:
-            return min(calculatedSize, 80)
-        case 8:
-            return min(calculatedSize, 70)
-        case 9:
-            return min(calculatedSize, 62)
-        default:
-            return calculatedSize
-        }
+        // macOS: fill the (width-capped) container so the rounded
+        // grid border hugs the cages, same as iOS
+        return min(containerSize.width, containerSize.height) / CGFloat(boardSize)
         #else
         // iOS/iPadOS: Use existing logic
         return min(containerSize.width, containerSize.height) / CGFloat(boardSize)
@@ -332,7 +311,7 @@ struct CageLabelView: View {
         // Cage label (operation and target)
         if let topLeft = cage.positions.min(by: { $0.row < $1.row || ($0.row == $1.row && $0.col < $1.col) }) {
             #if os(visionOS) || os(macOS)
-            Text("\(cage.target)\(cage.operation.rawValue)")
+            Text(verbatim: "\(cage.target)\(cage.operation.rawValue)")
                 .font(optimalLabelFont(for: cellSize))
                 .fontWeight(.bold)
                 .foregroundColor(ThemeColors.cageLabel)
@@ -341,7 +320,7 @@ struct CageLabelView: View {
                     y: CGFloat(topLeft.row) * (cellSize + 1) + cellSize * 0.15 + yOffset
                 )
             #else
-            Text("\(cage.target)\(cage.operation.rawValue)")
+            Text(verbatim: "\(cage.target)\(cage.operation.rawValue)")
                 .font(.system(size: min(14, cellSize * 0.26), weight: .bold, design: .rounded))
                 .foregroundColor(ThemeColors.cageLabel)
                 .position(
@@ -603,20 +582,24 @@ struct VisionProNumberInputView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            // Clear button at top with enhanced size
+            // Clear button at top: themed empty tile
             Button(action: {
                 if let selected = game.selectedPosition {
                     game.setValue(nil, at: selected)
                 }
             }) {
-                Text("Clear")
-                    .font(.title)
-                    .fontWeight(.bold)
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(ThemeColors.cardFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(ThemeColors.cardStroke, lineWidth: 1)
+                    )
+                    .shadow(color: ThemeColors.cardShadow, radius: 4, x: 0, y: 2)
+                    .frame(width: 180, height: 60)
+                    .opacity(game.selectedPosition != nil ? 1 : 0.55)
             }
-            .frame(width: 180, height: 60)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(NoEffectButtonStyle())
             .disabled(game.selectedPosition == nil)
-            .tint(.red)
 
             // Number buttons in optimized grid layout with larger sizes
             LazyVGrid(columns: [
@@ -625,19 +608,15 @@ struct VisionProNumberInputView: View {
                 GridItem(.fixed(85))
             ], spacing: 20) {
                 ForEach(1...game.size, id: \.self) { number in
-                    Button(action: {
+                    NumberPadButton(
+                        label: "\(number)",
+                        isEnabled: game.selectedPosition == nil || canEnterNumber(number),
+                        size: 85
+                    ) {
                         if let selected = game.selectedPosition {
                             game.setValue(number, at: selected)
                         }
-                    }) {
-                        Text("\(number)")
-                            .font(.system(size: 36, weight: .bold))
-                            .fontWeight(.bold)
                     }
-                    .frame(width: 85, height: 85)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!canEnterNumber(number))
-                    .tint(canEnterNumber(number) ? ThemeColors.buttonBackgroundSelected : ThemeColors.buttonBackgroundDisabled)
                 }
             }
         }
