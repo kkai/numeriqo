@@ -145,6 +145,7 @@ struct SizeSelectionView: View {
             startGameButton
                 .padding(.top, 6)
         }
+        .frame(maxWidth: 560)
         .padding()
         #if os(visionOS)
         .padding(.bottom)
