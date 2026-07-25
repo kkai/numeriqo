@@ -1,0 +1,5 @@
+A complete visual redesign. Numeriqo 2.0 now matches its icon: soft blue surfaces, a glowing wordmark, and embossed math symbols floating behind the home screen. Cages are drawn as rounded tiles with crisp blue outlines, so the board is easier to read at a glance. The number pad, size cards, and buttons have all been rebuilt in the new style.
+
+Both appearances got equal attention: a pale ice-blue look in light mode and a deep navy look with glowing accents in dark mode. Layouts are also refined on iPad, Mac, and Apple Vision Pro.
+
+Same puzzles, same rules, same best times — everything you solved still counts.
