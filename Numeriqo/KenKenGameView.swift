@@ -121,6 +121,9 @@ struct MathMazeGameView: View {
         } message: {
             Text(completionMessage)
         }
+        #if os(macOS)
+        .modifier(KeyboardInputModifier(game: game))
+        #endif
         #if os(iOS)
         .onChange(of: scenePhase) { oldPhase, newPhase in
             switch newPhase {
@@ -157,9 +160,8 @@ struct GameGridView: View {
     var body: some View {
         GeometryReader { geometry in
             let cellSize = optimalCellSize(for: game.size, in: geometry.size)
-
-            #if os(visionOS)
-            // For visionOS, calculate centering offset
+            // Grid extent includes the 1pt spacing between cells; center cages,
+            // labels, and cells with the same offsets so all layers stay aligned.
             let gridTotalSize = CGFloat(game.size) * cellSize + CGFloat(game.size - 1)
             let xOffset = (geometry.size.width - gridTotalSize) / 2
             let yOffset = (geometry.size.height - gridTotalSize) / 2
@@ -193,72 +195,6 @@ struct GameGridView: View {
                 }
                 .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
-            #elseif os(macOS)
-            // macOS: Calculate centering offset like visionOS
-            let gridTotalSize = CGFloat(game.size) * cellSize + CGFloat(game.size - 1)
-            let xOffset = (geometry.size.width - gridTotalSize) / 2
-            let yOffset = (geometry.size.height - gridTotalSize) / 2
-
-            ZStack {
-                // Cage tiles
-                ForEach(game.cages) { cage in
-                    CageBackgroundView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
-                }
-
-                // Cage labels
-                ForEach(game.cages) { cage in
-                    CageLabelView(cage: cage, cellSize: cellSize, game: game, xOffset: xOffset, yOffset: yOffset)
-                }
-
-                // Grid cells - centered properly
-                VStack(spacing: 1) {
-                    ForEach(0..<game.size, id: \.self) { row in
-                        HStack(spacing: 1) {
-                            ForEach(0..<game.size, id: \.self) { col in
-                                CellView(
-                                    position: Position(row: row, col: col),
-                                    game: game,
-                                    cellSize: cellSize,
-                                    onTap: onCellTap
-                                )
-                                .frame(width: cellSize, height: cellSize)
-                            }
-                        }
-                    }
-                }
-                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-            }
-            #else
-            // iOS/iPadOS - use existing layout
-            ZStack {
-                // Cage tiles
-                ForEach(game.cages) { cage in
-                    CageBackgroundView(cage: cage, cellSize: cellSize, game: game)
-                }
-
-                // Cage labels
-                ForEach(game.cages) { cage in
-                    CageLabelView(cage: cage, cellSize: cellSize, game: game)
-                }
-
-                // Grid cells
-                VStack(spacing: 1) {
-                    ForEach(0..<game.size, id: \.self) { row in
-                        HStack(spacing: 1) {
-                            ForEach(0..<game.size, id: \.self) { col in
-                                CellView(
-                                    position: Position(row: row, col: col),
-                                    game: game,
-                                    cellSize: cellSize,
-                                    onTap: onCellTap
-                                )
-                                .frame(width: cellSize, height: cellSize)
-                            }
-                        }
-                    }
-                }
-            }
-            #endif
         }
         .aspectRatio(1, contentMode: .fit)
         .padding()
@@ -268,7 +204,7 @@ struct GameGridView: View {
         #if os(visionOS)
         // Vision Pro: Optimized sizes for maximum readability
         let maxSize = min(containerSize.width, containerSize.height) - 40 // reduced padding for larger cells
-        let calculatedSize = maxSize / CGFloat(boardSize)
+        let calculatedSize = (maxSize - CGFloat(boardSize - 1)) / CGFloat(boardSize)
 
         // Increased cell sizes for better visibility in visionOS
         switch boardSize {
@@ -289,13 +225,10 @@ struct GameGridView: View {
         default:
             return calculatedSize
         }
-        #elseif os(macOS)
-        // macOS: fill the (width-capped) container so the rounded
-        // grid border hugs the cages, same as iOS
-        return min(containerSize.width, containerSize.height) / CGFloat(boardSize)
         #else
-        // iOS/iPadOS: Use existing logic
-        return min(containerSize.width, containerSize.height) / CGFloat(boardSize)
+        // iOS/iPadOS/macOS: fill the container, leaving room for the
+        // (boardSize - 1) points of inter-cell spacing
+        return (min(containerSize.width, containerSize.height) - CGFloat(boardSize - 1)) / CGFloat(boardSize)
         #endif
     }
 }
@@ -388,16 +321,23 @@ struct CellView: View {
                     )
             }
 
-            // Selection highlight
+            // Selection highlight, concentric with the visible cage tile:
+            // the tile outline is inset 2.5pt from the pitch lines and stroked
+            // 1.8pt (CageBackgroundView), and the pitch slot extends 1pt past
+            // the cell frame, so the tile center sits 0.5pt down-right of the
+            // cell center. Leave a uniform 1pt gap to the tile stroke.
             if game.selectedPosition == position {
-                RoundedRectangle(cornerRadius: cellSize * 0.16)
+                let inset: CGFloat = 2.5 + 0.9 + 1 + 1  // tile inset + half tile stroke + gap + half own stroke
+                let radius = max(3, min(10, cellSize * 0.18) - (inset - 2.5))
+                RoundedRectangle(cornerRadius: radius)
                     .fill(ThemeColors.selectionHighlight)
                     .overlay(
-                        RoundedRectangle(cornerRadius: cellSize * 0.16)
+                        RoundedRectangle(cornerRadius: radius)
                             .stroke(ThemeColors.selectionBorder, lineWidth: 2)
                     )
                     .shadow(color: ThemeColors.accentGlow, radius: 5)
-                    .padding(4)
+                    .frame(width: cellSize + 1 - inset * 2, height: cellSize + 1 - inset * 2)
+                    .offset(x: 0.5, y: 0.5)
             }
         }
         .contentShape(Rectangle())
@@ -486,6 +426,12 @@ struct NumberInputView: View {
 
     var body: some View {
         VStack(spacing: 14) {
+            #if os(macOS)
+            Text("Select a cell, then click a number or type on your keyboard (arrows move, ⌫ clears):")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundColor(ThemeColors.secondaryText)
+            #else
             Text("Select a cell, then choose a number:")
                 #if os(visionOS)
                 .font(.system(size: 18, weight: .medium, design: .rounded))
@@ -493,6 +439,7 @@ struct NumberInputView: View {
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 #endif
                 .foregroundColor(ThemeColors.secondaryText)
+            #endif
 
             #if os(macOS) || os(visionOS)
             // Grid layout for better appearance on large screens
@@ -627,6 +574,87 @@ struct VisionProNumberInputView: View {
         return game.isValidMove(number, at: selected)
     }
 }
+
+#if os(macOS)
+import AppKit
+
+/// Adds physical-keyboard control to the macOS game view:
+/// digits 1…N enter a value into the selected cell, Delete/Backspace clears it,
+/// and the arrow keys move the selection around the grid.
+///
+/// Uses a window-level `NSEvent` key monitor rather than SwiftUI's `.onKeyPress`,
+/// because the focusable number-pad buttons would otherwise intercept the arrow
+/// keys and leave keyboard entry working only intermittently.
+struct KeyboardInputModifier: ViewModifier {
+    @ObservedObject var game: MathMazeGame
+    @State private var monitor: Any?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { installMonitor() }
+            .onDisappear { removeMonitor() }
+    }
+
+    private func installMonitor() {
+        removeMonitor()
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Return nil to swallow keys we act on; return the event otherwise
+            // so system shortcuts and text fields keep working.
+            handle(event) ? nil : event
+        }
+    }
+
+    private func removeMonitor() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        monitor = nil
+    }
+
+    /// Returns true when the key was consumed.
+    private func handle(_ event: NSEvent) -> Bool {
+        // Leave command-based shortcuts (⌘Q, ⌘W, …) alone.
+        if event.modifierFlags.contains(.command) { return false }
+
+        switch event.keyCode {
+        case 126: move(rowDelta: -1, colDelta: 0); return true   // up arrow
+        case 125: move(rowDelta: 1, colDelta: 0);  return true   // down arrow
+        case 123: move(rowDelta: 0, colDelta: -1); return true   // left arrow
+        case 124: move(rowDelta: 0, colDelta: 1);  return true   // right arrow
+        case 51, 117:                                            // delete / forward delete
+            if let selected = game.selectedPosition {
+                game.setValue(nil, at: selected)
+            }
+            return true
+        default:
+            break
+        }
+
+        // Digit entry (1…N for an N×N grid).
+        if let character = event.charactersIgnoringModifiers?.first,
+           let digit = character.wholeNumberValue,
+           digit >= 1, digit <= game.size {
+            if let selected = game.selectedPosition, game.isValidMove(digit, at: selected) {
+                game.setValue(digit, at: selected)
+            }
+            return true
+        }
+
+        return false
+    }
+
+    private func move(rowDelta: Int, colDelta: Int) {
+        // First arrow press with nothing selected drops into the top-left cell.
+        guard let current = game.selectedPosition else {
+            game.selectedPosition = Position(row: 0, col: 0)
+            return
+        }
+        let newRow = min(max(current.row + rowDelta, 0), game.size - 1)
+        let newCol = min(max(current.col + colDelta, 0), game.size - 1)
+        game.selectedPosition = Position(row: newRow, col: newCol)
+    }
+}
+#endif
 
 #Preview {
     MathMazeGameView(
