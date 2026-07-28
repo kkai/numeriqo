@@ -83,7 +83,12 @@ struct ContentView: View {
                     text: appTitle,
                     fontSize: gameState == .sizeSelection ? 46 : 34
                 )
+                #if os(visionOS)
+                // Keep the title clear of the window's top edge while playing.
+                .padding(.top, gameState == .sizeSelection ? 20 : 24)
+                #else
                 .padding(.top, gameState == .sizeSelection ? 12 : 0)
+                #endif
 
                 Group {
                     switch gameState {

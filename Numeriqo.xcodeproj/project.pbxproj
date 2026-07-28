@@ -468,6 +468,9 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 2.0;
+				"MARKETING_VERSION[sdk=macosx*]" = 1.0;
+				"MARKETING_VERSION[sdk=xros*]" = 1.0;
+				"MARKETING_VERSION[sdk=xrsimulator*]" = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.kaikunze.numeriqopro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -511,6 +514,9 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.5;
 				MARKETING_VERSION = 2.0;
+				"MARKETING_VERSION[sdk=macosx*]" = 1.0;
+				"MARKETING_VERSION[sdk=xros*]" = 1.0;
+				"MARKETING_VERSION[sdk=xrsimulator*]" = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = de.kaikunze.numeriqopro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
