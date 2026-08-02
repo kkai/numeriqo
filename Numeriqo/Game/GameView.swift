@@ -1,0 +1,367 @@
+//
+//  GameView.swift
+//  Numeriqo
+//
+
+import SwiftUI
+
+struct GameView: View {
+    private enum Source: Equatable {
+        case fresh(size: Int, difficulty: Difficulty)
+        case daily(day: Int)
+        case resume(GameSnapshot)
+    }
+
+    /// Today's daily is a fixed size and tier so everyone solves the same board.
+    static let dailySize = 6
+    static let dailyDifficulty: Difficulty = .steady
+
+    private let source: Source
+
+    init(size: Int, difficulty: Difficulty) {
+        source = .fresh(size: size, difficulty: difficulty)
+    }
+
+    init(resuming snapshot: GameSnapshot) {
+        source = .resume(snapshot)
+    }
+
+    init(daily day: Int) {
+        source = .daily(day: day)
+    }
+
+    @Environment(ProgressStore.self) private var progress
+    @Environment(MasteryTracker.self) private var mastery
+    @Environment(EntitlementStore.self) private var entitlements
+    @Environment(PaywallPresenter.self) private var paywall
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var game: NumeriqoGame?
+    @State private var hint: Hint?
+    /// Set for exactly one board change, so a digit placed by Apply is not
+    /// credited as the player's own deduction.
+    @State private var appliedHint = false
+    @State private var newBestTime = false
+    @State private var failedToGenerate = false
+    /// Wall-clock anchor for the play timer.
+    ///
+    /// Reset whenever the scene leaves and re-enters the foreground. Without
+    /// that, the first tick after returning folds the entire background
+    /// interval into `elapsed` — an overnight background adds hours of "play
+    /// time" and can poison a first best.
+    @State private var lastTick = Date()
+
+    private let engine = HintEngine()
+
+    private var size: Int {
+        switch source {
+        case .fresh(let size, _): size
+        case .daily: Self.dailySize
+        case .resume(let snapshot): snapshot.puzzle.size
+        }
+    }
+
+    private var isDaily: Bool {
+        if case .daily = source { return true }
+        return false
+    }
+
+    private var difficulty: Difficulty {
+        switch source {
+        case .fresh(_, let difficulty): difficulty
+        case .daily: Self.dailyDifficulty
+        case .resume(let snapshot): snapshot.difficulty
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Theme.paper.ignoresSafeArea()
+            if let game {
+                content(game)
+            } else {
+                PuzzleLoadingView(size: size, failed: failedToGenerate) {
+                    failedToGenerate = false
+                    Task { await load() }
+                }
+            }
+        }
+        .navigationTitle(isDaily ? "Today's puzzle" : "\(size)×\(size) · \(difficulty.displayName)")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if let game {
+                    Text(Self.clock(game.elapsed))
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(Theme.inkSecondary)
+                        .accessibilityLabel("Elapsed time")
+                        .accessibilityValue(Self.spokenClock(game.elapsed))
+                }
+            }
+        }
+        .task { await load() }
+        .onChange(of: scenePhase) { _, phase in
+            lastTick = Date()
+            if phase != .active { persist() }
+        }
+        .onDisappear { persist() }
+    }
+
+    @ViewBuilder
+    private func content(_ game: NumeriqoGame) -> some View {
+        VStack(spacing: 16) {
+            BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
+                .padding(.horizontal, 12)
+
+            if let hint {
+                HintBanner(
+                    hint: hint,
+                    onMore: { escalate(game) },
+                    onApply: { apply(hint, to: game) },
+                    onDismiss: { self.hint = nil },
+                    onUnlock: { paywall.present(.teachingHints) }
+                )
+            } else {
+                hintButton(game)
+            }
+
+            // Hidden once won. It stayed on screen at full opacity while every
+            // key silently swallowed taps, because `press`/`tap`/`undo` all
+            // guard on `phase == .playing`.
+            if game.phase == .playing {
+                NumberPadView(game: game)
+                    .padding(.horizontal, Layout.Space.gutter)
+            }
+        }
+        .padding(.bottom, 12)
+        .task(id: game.phase) {
+            // Drives the play clock. Nothing called `addElapsed` before this,
+            // so `elapsed` was always zero and every best time recorded 0:00.
+            guard game.phase == .playing else { return }
+            lastTick = Date()
+            while !Task.isCancelled, game.phase == .playing {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                let now = Date()
+                game.addElapsed(now.timeIntervalSince(lastTick))
+                lastTick = now
+            }
+        }
+        .onChange(of: game.board) { old, new in
+            creditMastery(old: old, new: new, game: game)
+            // Any board change invalidates the argument on screen.
+            hint = nil
+            persist()
+        }
+        .onChange(of: game.phase) { _, phase in
+            guard phase == .won else { return }
+            progress.clearSavedGame()
+            // Taken from recordSolve rather than re-derived against a store
+            // that has already been updated: on an exact tie that comparison
+            // claims a record which was never written.
+            newBestTime = progress.recordSolve(
+                size: game.puzzle.size, difficulty: game.difficulty, time: game.elapsed
+            )
+            if game.isDaily { progress.recordDailyCompleted(day: DailyPuzzle.today) }
+            AccessibilityNotification.Announcement(winMessage).post()
+        }
+        .overlay(alignment: .bottom) {
+            if game.phase == .won { winBanner }
+        }
+        // VoiceOver has no way to notice a banner appearing at the bottom of
+        // the screen, so say it.
+        .onChange(of: hint?.text) { _, text in
+            guard let text else { return }
+            AccessibilityNotification.Announcement(text).post()
+        }
+    }
+
+    /// The best moment in the app, so it must not dead-end. Before this the
+    /// only way on was Back and re-pick.
+    @ViewBuilder
+    private var winBanner: some View {
+        VStack(spacing: 10) {
+            Text(winMessage)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Theme.ink)
+
+            // The daily used to end here with no button at all — a dead end at
+            // the best moment in the app, on the screen whose whole job is
+            // making you come back tomorrow.
+            HStack(spacing: Layout.Space.snug) {
+                if case .daily = source {
+                    Button("Play another") { startAnother() }
+                        .buttonStyle(.secondary)
+                } else {
+                    Button("New puzzle") { startAnother() }
+                        .buttonStyle(.primary(tint: Theme.tierAccent(difficulty)))
+                }
+                Button("Done") { dismiss() }
+                    .buttonStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, Layout.Space.section)
+        .card(padding: Layout.Space.step)
+        .padding(.bottom, Layout.Space.step)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(winMessage)
+    }
+
+    private var winMessage: String {
+        let time = Self.spokenClock(game?.elapsed ?? 0)
+        if case .daily = source { return "Today's puzzle, solved in \(time)." }
+        return newBestTime ? "Solved in \(time). Your best yet." : "Solved in \(time)."
+    }
+
+    private func startAnother() {
+        hint = nil
+        newBestTime = false
+        game = nil
+        Task { await load() }
+    }
+
+    // MARK: - Clock
+
+    static func clock(_ time: TimeInterval) -> String {
+        let total = Int(time)
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    /// Spoken form. VoiceOver reads "3:07" as "three colon zero seven".
+    static func spokenClock(_ time: TimeInterval) -> String {
+        let total = Int(time)
+        let minutes = total / 60, seconds = total % 60
+        if minutes == 0 { return "\(seconds) second\(seconds == 1 ? "" : "s")" }
+        return "\(minutes) minute\(minutes == 1 ? "" : "s") \(seconds) second\(seconds == 1 ? "" : "s")"
+    }
+
+    private func hintButton(_ game: NumeriqoGame) -> some View {
+        Button {
+            let policy = FeatureGate.hintPolicy(unlocked: entitlements.isUnlocked)
+            let produced = engine.hint(for: game, mastery: mastery,
+                                       showErrors: progress.settings.showErrors, policy: policy)
+            hint = produced
+            // Only a hint the player actually received counts. A paywall pitch
+            // or "nothing to find" used to inflate the very number the stats
+            // screen sells as proof the teaching works.
+            if !produced.isLocked, produced.step != nil || produced.isError {
+                progress.recordHintTaken(difficulty: game.difficulty)
+            }
+            Haptics.hint()
+        } label: {
+            Label("Hint", systemImage: "lightbulb")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Theme.ink)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(game.phase != .playing)
+        .accessibilityLabel("Hint")
+        .accessibilityHint("Names the region first. Ask again for more.")
+    }
+
+    // MARK: - Actions
+
+    private func escalate(_ game: NumeriqoGame) {
+        guard let current = hint else { return }
+        let policy = FeatureGate.hintPolicy(unlocked: entitlements.isUnlocked)
+        hint = engine.escalate(current, for: game, mastery: mastery, policy: policy)
+        Haptics.hint()
+    }
+
+    private func apply(_ hint: Hint, to game: NumeriqoGame) {
+        guard let step = hint.step else { self.hint = nil; return }
+        // Marks the next board change as assisted, so mastery is not credited.
+        appliedHint = true
+        game.apply(step)
+        self.hint = nil
+    }
+
+    private func creditMastery(old: BoardState, new: BoardState, game: NumeriqoGame) {
+        let wasApplied = appliedHint
+        appliedHint = false
+
+        guard new.entries.count == old.entries.count + 1,
+              let added = new.entries.first(where: { old.entries[$0.key] == nil })
+        else { return }
+
+        // Two guards: the player didn't tap Apply, and this cell hasn't already
+        // paid out. The second is what stops a technique being farmed to
+        // Learned by placing, undoing, and placing again.
+        let firstTime = game.claimMasteryCredit(at: added.key)
+        mastery.recordEntry(cell: added.key, digit: added.value, game: game,
+                            unaided: !wasApplied && firstTime)
+    }
+
+    /// Persists unless the game is finished — a won board clears its save and
+    /// must not resurrect it on the way out.
+    private func persist() {
+        guard let game, game.phase != .won else { return }
+        progress.saveGame(game.snapshot)
+    }
+
+    private func load() async {
+        guard game == nil else { return }
+
+        switch source {
+        case .resume(let snapshot):
+            let resumed = NumeriqoGame(snapshot: snapshot)
+            resumed.cellFirstInput = progress.settings.cellFirstInput
+            game = resumed
+
+        case .fresh(let size, let difficulty):
+            // Generation is nonisolated, so it runs off the main actor.
+            let generated = await Task.detached(priority: .userInitiated) {
+                PuzzleGenerator.generate(matching: difficulty, size: size,
+                                         seed: UInt64.random(in: 0..<UInt64.max))
+            }.value
+            guard let generated else { failedToGenerate = true; return }
+            let fresh = NumeriqoGame(puzzle: generated.puzzle, difficulty: difficulty)
+            fresh.cellFirstInput = progress.settings.cellFirstInput
+            if progress.settings.autoNotes { fresh.fillAutoNotes() }
+            game = fresh
+
+        case .daily(let day):
+            // Seeded from the date, so every player gets the same board and a
+            // streak means something.
+            let seed = DailyPuzzle.seed(day: day, size: Self.dailySize,
+                                        difficulty: Self.dailyDifficulty)
+            let size = Self.dailySize
+            let tier = Self.dailyDifficulty
+            let generated = await Task.detached(priority: .userInitiated) {
+                PuzzleGenerator.generate(matching: tier, size: size, seed: seed)
+            }.value
+            guard let generated else { failedToGenerate = true; return }
+            let fresh = NumeriqoGame(puzzle: generated.puzzle,
+                                     difficulty: Self.dailyDifficulty, isDaily: true)
+            fresh.cellFirstInput = progress.settings.cellFirstInput
+            if progress.settings.autoNotes { fresh.fillAutoNotes() }
+            game = fresh
+        }
+    }
+}
+
+/// The daily puzzle's identity.
+///
+/// Everyone gets the same board on the same day, which is what makes a streak
+/// mean anything — so the seed comes from the date, never from the device.
+nonisolated enum DailyPuzzle {
+    /// Days since the epoch in the player's **own** calendar.
+    ///
+    /// Dividing `timeIntervalSince1970` by 86,400 counts UTC days, so the
+    /// "daily" rolled over at 01:00 in Germany and mid-afternoon across the US,
+    /// and streaks broke for reasons nobody could see.
+    static var today: Int {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        return calendar.dateComponents([.day], from: Date(timeIntervalSince1970: 0),
+                                       to: start).day ?? 0
+    }
+
+    static func seed(day: Int, size: Int, difficulty: Difficulty) -> UInt64 {
+        UInt64(bitPattern: Int64(day &* 2_654_435_761 &+ size &* 40_503 &+ difficulty.order &* 97))
+    }
+}

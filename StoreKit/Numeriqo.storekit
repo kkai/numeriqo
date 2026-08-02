@@ -1,0 +1,28 @@
+{
+  "identifier" : "B2E1D0A3",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "8C4F62BD",
+      "localizations" : [
+        {
+          "description" : "Every lesson, every drill, hints that teach, large grids and full stats. One purchase, forever.",
+          "displayName" : "Numeriqo Full",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "de.kaikunze.numeriqo.full",
+      "referenceName" : "Numeriqo Full",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6749287069",
+    "_developerTeamID" : "8H42EZRCCP",
+    "_lastSynchronizedDate" : 0
+  },
+  "subscriptionGroups" : [],
+  "version" : { "major" : 4, "minor" : 0 }
+}
