@@ -45,6 +45,11 @@ struct LearnMenuView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // The app is ink on paper everywhere else. A grouped list is the
+        // only surface that was not, so walking Home to here changed the
+        // wall colour and the card radius mid-flow.
+        .scrollContentBackground(.hidden)
+        .background(Theme.paper.ignoresSafeArea())
         .navigationTitle("Learn")
         // A real binding, not `.constant`: SwiftUI cannot write false back
         // through a constant, so any dismissal other than the button left the
@@ -94,11 +99,11 @@ struct LearnMenuView: View {
                 // conceding at large Dynamic Type.
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.subheadline.weight(.medium))
+                        .font(Theme.heading)
                         .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(subtitle)
-                        .font(.caption)
+                        .font(Theme.caption)
                         .foregroundStyle(Theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -132,7 +137,7 @@ struct LearnMenuView: View {
         // A semantic style, not a fixed 15pt: the audit flagged the fixed size
         // as unscaling, and the fixed 20pt frame clipped the glyph once type
         // grew. `minWidth` keeps the rows aligned without capping the glyph.
-        .font(.body.weight(.semibold))
+        .font(Theme.heading)
         .foregroundStyle(state == .learned && !paywalled ? Theme.accent : Theme.ink)
         .frame(minWidth: 22)
         // The badge is decorative; state is re-announced via accessibilityValue.

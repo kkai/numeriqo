@@ -22,44 +22,67 @@ struct StatsView: View {
                 }
                 if times.isEmpty {
                     Text("Solve a puzzle and your best time lands here.")
-                        .font(.footnote).foregroundStyle(Theme.inkSecondary)
+                        .font(Theme.secondary).foregroundStyle(Theme.inkSecondary)
                 }
+                // This is the table the type pass exists for: a right-aligned
+                // numeric column set in proportional figures, where 4:07 and
+                // 11:52 did not line up under each other.
                 ForEach(times, id: \.key) { key, time in
-                    LabeledContent("\(key.size)×\(key.size) · \(key.difficulty.displayName)",
-                                   value: format(time))
-                        .font(.subheadline)
+                    LabeledContent {
+                        Text(format(time)).font(Theme.numeral(.body))
+                    } label: {
+                        Text("\(key.size)×\(key.size) · \(key.difficulty.displayName)")
+                            .font(Theme.steady(.body))
+                    }
                 }
             }
 
             if FeatureGate.areFullStatsAvailable(unlocked: entitlements.isUnlocked) {
                 Section("Solves") {
-                    LabeledContent("Puzzles solved", value: "\(progress.stats.puzzlesSolved)")
-                    LabeledContent("Daily streak", value: "\(progress.daily.currentStreak)")
-                    LabeledContent("Best streak", value: "\(progress.daily.bestStreak)")
+                    counter("Puzzles solved", progress.stats.puzzlesSolved)
+                    counter("Daily streak", progress.daily.currentStreak)
+                    counter("Best streak", progress.daily.bestStreak)
                 }
 
                 Section("Skill") {
                     ForEach(Technique.allCases) { technique in
                         let record = mastery.record(for: technique)
-                        LabeledContent(technique.displayName) {
-                            Text(record.state == .learned
-                                 ? "Learned"
-                                 : "\(record.unaidedUses)/\(MasteryTracker.learnedThreshold)")
+                        LabeledContent {
+                            if record.state == .learned {
+                                Text("Learned").font(Theme.secondary)
+                            } else {
+                                Text("\(record.unaidedUses)/\(MasteryTracker.learnedThreshold)")
+                                    .font(Theme.numeral(.footnote))
+                            }
+                        } label: {
+                            Text(technique.displayName).font(Theme.secondary)
                         }
-                        .font(.footnote)
                     }
                 }
             } else {
                 Section {
                     Button("See your full progress") { paywall.present(.stats) }
-                        .font(.subheadline)
+                        .font(Theme.body)
                 } footer: {
                     Text("Solve counts, streaks, and how far you've got with each of the 16 techniques.")
                 }
             }
         }
         .listStyle(.insetGrouped)
+        // The app is ink on paper everywhere else. A grouped list is the
+        // only surface that was not, so walking Home to here changed the
+        // wall colour and the card radius mid-flow.
+        .scrollContentBackground(.hidden)
+        .background(Theme.paper.ignoresSafeArea())
         .navigationTitle("Progress")
+    }
+
+    private func counter(_ label: String, _ value: Int) -> some View {
+        LabeledContent {
+            Text("\(value)").font(Theme.numeral(.body))
+        } label: {
+            Text(label).font(Theme.steady(.body))
+        }
     }
 
     private func format(_ time: TimeInterval) -> String {

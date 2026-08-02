@@ -100,10 +100,10 @@ nonisolated enum Theme {
     /// disaster.
     static let error = dynamic(light: ThemeRGBA(0.706, 0.275, 0.184),
                                dark: ThemeRGBA(0.878, 0.443, 0.310))
-    /// Success is the accent, never green. Green would be a second hue spent on
-    /// something the accent already says.
-    static let success = dynamic(light: ThemeRGBA(0.306, 0.541, 0.435),
-                                 dark: ThemeRGBA(0.463, 0.702, 0.588))
+    // There is no `success` token. Success is the accent, because a second
+    // green spent on something the accent already says is a hue the palette
+    // does not need. One existed, duplicated `accent` exactly, and had zero
+    // call sites.
 
     /// The wash behind a selected cell and its row/column mates.
     ///
@@ -132,23 +132,67 @@ nonisolated enum Theme {
     }
 
     // MARK: - Type
+    //
+    // One rule, and it comes from the subject: **this is a game about numbers,
+    // so the numerals are the display face.**
+    //
+    //   SF Mono   every numeral, and the wordmark
+    //   SF        everything read as prose: labels, body, buttons
+    //
+    // Inverting the usual hierarchy is the point. In a number puzzle the
+    // biggest type on screen is always a digit, so the interesting typographic
+    // decision is how the digits look, not how the title does.
+    //
+    // **Why monospaced, and not a serif.** A Latin square is a fixed grid where
+    // every cell is the same width and every digit appears exactly once in a
+    // line; a monospaced face is the typographic form of that same constraint,
+    // and it is tabular by construction rather than by remembering a modifier.
+    // It reads as computation, which is what this puzzle is.
+    //
+    // The other half of the reason is negative. A first pass set these in New
+    // York, which put the board a shade away from Just Kakuro: that app's Theme
+    // already uses `design: .serif` for its digits and clues, and its paper
+    // (#F2F3EE) and ink (#22262B) are within a few points of these. Two puzzle
+    // apps from one developer sharing a surface, a palette and a typeface is
+    // not a family, it is a collision. Mono is the axis that separates them.
+    //
+    // Board notes stay in the proportional face, and that is a distinction
+    // rather than an exception: **entries are ink, notes are pencil.**
+    //
+    // Before this existed there were 23 font treatments across 57 call sites
+    // and only 7 went through a token, because the scale stopped at `heading`
+    // and there was nothing else to reach for.
 
-    /// Every figure on the board is monospaced. Non-tabular digits make a
-    /// numeric grid shimmer as values change — the columns visibly breathe.
+    /// Numerals presented as data: times, counts, prices, grid sizes.
     ///
-    /// Not `.rounded`: soft terminals read as a friendly consumer app and fight
-    /// both the ink surface and the arithmetic. The default grotesque is
-    /// quieter and lets the accent stroke be the only expressive mark.
+    /// Always tabular. Non-tabular digits make a numeric column shimmer as
+    /// values change, which is exactly what a best-times table must not do.
+    static func numeral(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        .system(style, design: .monospaced).weight(weight)
+    }
+
+    /// Prose that happens to contain a number. Stays proportional, but tabular,
+    /// so "Step 3 of 15" does not jump as it counts up.
+    static func steady(_ style: Font.TextStyle, weight: Font.Weight = .regular) -> Font {
+        .system(style, design: .default).weight(weight).monospacedDigit()
+    }
+
+    // MARK: Board
+
+    /// A placed digit. The most-looked-at glyph in the app.
     static func digitFont(size: CGFloat) -> Font {
-        .system(size: size, weight: .regular).monospacedDigit()
+        .system(size: size, weight: .regular, design: .monospaced)
     }
 
     /// Clues are set small and tight. They must be legible without competing
     /// with the digit that will eventually sit beside them.
     static func clueFont(size: CGFloat) -> Font {
-        .system(size: size, weight: .semibold).monospacedDigit()
+        .system(size: size, weight: .semibold, design: .monospaced)
     }
 
+    /// Notes are pencil: the proportional face, not the monospaced one. The
+    /// change of face is what separates a candidate from a committed answer at
+    /// a glance, without spending any colour on the distinction.
     static func noteFont(size: CGFloat) -> Font {
         .system(size: size, weight: .regular).monospacedDigit()
     }
@@ -156,10 +200,28 @@ nonisolated enum Theme {
     /// The number pad. A semantic style so it scales with Dynamic Type — the
     /// board's digits cannot (they are sized to their cell), but the pad has no
     /// such constraint and the audit was right to flag it.
-    static let padDigitFont = Font.system(.title2, design: .default).monospacedDigit()
+    static let padDigitFont = numeral(.title2)
 
-    static let title = Font.system(.largeTitle, design: .default).weight(.light)
+    /// The ink a clue is set in. Quieter than a placed digit, because it is
+    /// given rather than earned.
+    static let clueInk = dynamic(light: ThemeRGBA(0.102, 0.102, 0.118, 0.62),
+                                 dark: ThemeRGBA(0.949, 0.941, 0.925, 0.60))
+
+    // MARK: Chrome
+
+    /// The wordmark and screen titles.
+    static let title = Font.system(.largeTitle, design: .monospaced).weight(.medium)
+    /// A card or section heading.
     static let heading = Font.system(.title3, design: .default).weight(.medium)
+    /// Running prose.
+    static let body = Font.callout
+    /// Supporting text under a heading or a control.
+    static let secondary = Font.footnote
+    /// The quietest readable text: row subtitles, footnotes.
+    static let caption = Font.caption
+    /// A small-caps label above a control. Use `.eyebrow()`, which also applies
+    /// the uppercasing and the tracking uppercase always needs.
+    static let eyebrow = Font.caption2.weight(.semibold)
 
     // MARK: - Dynamic provider
 

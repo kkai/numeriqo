@@ -42,15 +42,7 @@ struct PaywallView: View {
         // Swipe-to-dismiss was the only exit, and it competes with the scroll
         // view. That is a trap for VoiceOver and Switch Control users.
         .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.inkSecondary)
-                    .frame(width: Layout.minimumTarget, height: Layout.minimumTarget)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Close")
+            CloseButton { dismiss() }
         }
         .task { await entitlements.loadProduct() }
         .onChange(of: entitlements.isUnlocked) { _, unlocked in
@@ -59,40 +51,37 @@ struct PaywallView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Layout.Space.snug) {
             Text(context.feature.headline)
                 .font(Theme.heading)
                 .foregroundStyle(Theme.ink)
             Text(context.feature.pitch)
-                .font(.subheadline)
+                .font(Theme.body)
                 .foregroundStyle(Theme.inkSecondary)
         }
     }
 
     private var featureList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("The full game includes")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Theme.inkSecondary)
-                .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: Layout.Space.step) {
+            Text("The full game includes").eyebrow()
             ForEach(PaidFeature.allCases) { feature in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: Layout.Space.snug) {
                     Image(systemName: "checkmark")
-                        .font(.caption.weight(.bold))
+                        .font(Theme.caption.weight(.bold))
                         .foregroundStyle(Theme.accent)
                     Text(feature.headline)
-                        .font(.subheadline)
+                        .font(Theme.body)
                         .foregroundStyle(feature == context.feature ? Theme.ink : Theme.inkSecondary)
                         .fontWeight(feature == context.feature ? .semibold : .regular)
                     Spacer(minLength: 0)
                 }
             }
         }
-        .card(padding: Layout.Space.block)
+        .card()
     }
 
     private var controls: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Layout.Space.step) {
             Button {
                 Task { await entitlements.purchase() }
             } label: {
@@ -104,7 +93,6 @@ struct PaywallView: View {
                         // that disagrees with the real localized price.
                         Text(entitlements.product.map { "Unlock everything · \($0.displayPrice)" }
                              ?? "Unlock everything")
-                            .font(.headline)
                     }
                 }
             }
@@ -112,7 +100,7 @@ struct PaywallView: View {
             .disabled(entitlements.purchaseState == .purchasing)
 
             Text("One purchase, and that's the whole game.")
-                .font(.footnote)
+                .font(Theme.secondary)
                 .foregroundStyle(Theme.inkSecondary)
 
             Button("Restore purchases") { Task { await entitlements.restore() } }
@@ -121,7 +109,7 @@ struct PaywallView: View {
 
             if case .failed(let message) = entitlements.purchaseState {
                 Text(message)
-                    .font(.footnote)
+                    .font(Theme.secondary)
                     .foregroundStyle(Theme.error)
                     .multilineTextAlignment(.center)
             }

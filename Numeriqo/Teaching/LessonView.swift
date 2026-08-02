@@ -45,12 +45,12 @@ struct LessonView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Layout.Space.block) {
                 Text(TechniqueContent.lesson(for: technique))
-                    .font(.callout)
+                    .font(Theme.body)
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(TechniqueContent.rule(for: technique))
-                    .font(.footnote)
+                    .font(Theme.secondary)
                     .foregroundStyle(Theme.inkSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .card()
@@ -58,11 +58,11 @@ struct LessonView: View {
                 if let game {
                     practiceBoard(game, technique: technique)
                 } else if loading {
-                    ProgressView().frame(maxWidth: .infinity).padding(.vertical, 40)
+                    ProgressView().frame(maxWidth: .infinity).padding(.vertical, Layout.Space.section)
                 } else if failedToGenerate {
                     VStack(spacing: Layout.Space.step) {
                         Text("That drill wouldn't come together. Try again for a different grid.")
-                            .font(.subheadline)
+                            .font(Theme.body)
                             .foregroundStyle(Theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         Button("Try again") {
@@ -124,11 +124,11 @@ struct LessonView: View {
 
     @ViewBuilder
     private func practiceBoard(_ game: NumeriqoGame, technique: Technique) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Layout.Space.block) {
             BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
             if game.phase == .won {
                 Text("Solved. That's \(mastery.record(for: technique).unaidedUses) of \(MasteryTracker.learnedThreshold) unaided toward Learned.")
-                    .font(.footnote)
+                    .font(Theme.steady(.footnote))
                     .foregroundStyle(Theme.accent)
             }
             NumberPadView(game: game)

@@ -93,7 +93,7 @@ struct GameView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 if let game {
                     Text(Self.clock(game.elapsed))
-                        .font(.footnote.monospacedDigit())
+                        .font(Theme.numeral(.footnote))
                         .foregroundStyle(Theme.inkSecondary)
                         .accessibilityLabel("Elapsed time")
                         .accessibilityValue(Self.spokenClock(game.elapsed))
@@ -110,9 +110,9 @@ struct GameView: View {
 
     @ViewBuilder
     private func content(_ game: NumeriqoGame) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Layout.Space.block) {
             BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, Layout.Space.gutter)
 
             if let hint {
                 HintBanner(
@@ -134,7 +134,7 @@ struct GameView: View {
                     .padding(.horizontal, Layout.Space.gutter)
             }
         }
-        .padding(.bottom, 12)
+        .padding(.bottom, Layout.Space.step)
         .task(id: game.phase) {
             // Drives the play clock. Nothing called `addElapsed` before this,
             // so `elapsed` was always zero and every best time recorded 0:00.
@@ -181,9 +181,9 @@ struct GameView: View {
     /// only way on was Back and re-pick.
     @ViewBuilder
     private var winBanner: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: Layout.Space.step) {
             Text(winMessage)
-                .font(.subheadline.weight(.medium))
+                .font(Theme.body)
                 .foregroundStyle(Theme.ink)
 
             // The daily used to end here with no button at all — a dead end at
@@ -201,8 +201,7 @@ struct GameView: View {
                     .buttonStyle(.secondary)
             }
         }
-        .padding(.horizontal, Layout.Space.section)
-        .card(padding: Layout.Space.step)
+                .card()
         .padding(.bottom, Layout.Space.step)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .accessibilityElement(children: .contain)
@@ -252,12 +251,8 @@ struct GameView: View {
             Haptics.hint()
         } label: {
             Label("Hint", systemImage: "lightbulb")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Theme.ink)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.quiet)
         .disabled(game.phase != .playing)
         .accessibilityLabel("Hint")
         .accessibilityHint("Names the region first. Ask again for more.")

@@ -21,7 +21,7 @@ struct HintBanner: View {
         VStack(alignment: .leading, spacing: Layout.Space.snug) {
             header
             Text(hint.text)
-                .font(.subheadline)
+                .font(Theme.body)
                 .foregroundStyle(Theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             footer
@@ -35,20 +35,10 @@ struct HintBanner: View {
 
     private var header: some View {
         HStack {
-            Text(title.uppercased())
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(hint.isError ? Theme.error : Theme.ink)
+            Text(title).eyebrow(hint.isError ? Theme.error : Theme.ink)
             Spacer()
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.inkSecondary)
-                    // A 44pt target, without a 44pt glyph.
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss hint")
+            CloseButton(action: onDismiss)
+                .accessibilityLabel("Dismiss hint")
         }
     }
 
@@ -67,27 +57,20 @@ struct HintBanner: View {
         HStack {
             if hint.isLocked {
                 Button("Unlock hints", action: onUnlock)
-                    .font(.footnote.weight(.medium))
-                    .tint(Theme.ink)
+                    .buttonStyle(.quiet)
             } else if hint.level < .resolution {
                 Button("Tell me more", action: onMore)
-                    .font(.footnote.weight(.medium))
-                    .tint(Theme.ink)
+                    .buttonStyle(.quiet)
                     .accessibilityHint("Shows one more step of the reasoning")
             }
 
             Spacer()
 
             if hint.level == .resolution, !hint.isError, hint.step != nil {
-                Button(action: onApply) {
-                    Text("Apply")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.paper)
-                        .padding(.horizontal, Layout.Space.block)
-                        .frame(minHeight: Layout.minimumTarget)
-                        .background(Capsule().fill(Theme.ink))
-                }
-                .buttonStyle(.plain)
+                // A compact primary, not a capsule. This was the app's second
+                // primary shape, with its own corner and its own height.
+                Button("Apply", action: onApply)
+                    .buttonStyle(.primary(fills: false))
             }
         }
     }

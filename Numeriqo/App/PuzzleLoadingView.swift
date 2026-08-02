@@ -40,13 +40,13 @@ struct PuzzleLoadingView: View {
     private var failureState: some View {
         VStack(spacing: Layout.Space.step) {
             Image(systemName: "square.grid.3x3.slash")
-                .font(.largeTitle.weight(.light))
+                .font(Theme.title)
                 .foregroundStyle(Theme.inkSecondary)
             Text("That one wouldn't come together")
                 .font(Theme.heading)
                 .foregroundStyle(Theme.ink)
             Text("Every puzzle is checked for a single solution before you see it, and this one didn't pass. Trying again builds a different grid.")
-                .font(.subheadline)
+                .font(Theme.body)
                 .foregroundStyle(Theme.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

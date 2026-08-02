@@ -51,6 +51,9 @@
                <Test
                   Identifier = "ProBuildTests">
                </Test>
+               <Test
+                  Identifier = "DesignShotTests">
+               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

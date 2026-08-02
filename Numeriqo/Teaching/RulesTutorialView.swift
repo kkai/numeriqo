@@ -68,7 +68,7 @@ struct RulesTutorialView: View {
             }
             Spacer()
             Text("Step \(engine.stepNumber) of \(engine.stepCount)")
-                .font(.caption)
+                .font(Theme.steady(.caption))
                 .foregroundStyle(Theme.inkSecondary)
         }
         .accessibilityElement(children: .combine)
@@ -82,13 +82,13 @@ struct RulesTutorialView: View {
     private var instruction: some View {
         VStack(alignment: .leading, spacing: Layout.Space.snug) {
             Text(engine.step.message)
-                .font(.callout)
+                .font(Theme.body)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let feedback = engine.feedback {
                 Text(feedback)
-                    .font(.footnote.weight(.medium))
+                    .font(Theme.secondary.weight(.medium))
                     .foregroundStyle(Theme.error)
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
@@ -139,7 +139,7 @@ struct RulesTutorialView: View {
             // optional — which is how the last tutorial ended up teaching
             // nothing.
             Text("Your turn")
-                .font(.subheadline.weight(.medium))
+                .font(Theme.body)
                 .foregroundStyle(Theme.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: Layout.minimumTarget + 8)
         }

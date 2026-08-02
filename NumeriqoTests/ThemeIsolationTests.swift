@@ -38,7 +38,7 @@ import UIKit
     private nonisolated func nonisolatedThemeColors() -> [Color] {
         [
             Theme.paper, Theme.surface, Theme.ink, Theme.inkSecondary,
-            Theme.cellRule, Theme.cageRule, Theme.accent, Theme.error, Theme.success,
+            Theme.cellRule, Theme.cageRule, Theme.accent, Theme.error, Theme.clueInk,
         ] + Difficulty.allCases.flatMap { [Theme.tierAccent($0), Theme.tierWash($0)] }
     }
 
@@ -71,7 +71,7 @@ import UIKit
             var differing = 0
             for color in [
                 Theme.paper, Theme.surface, Theme.ink, Theme.inkSecondary,
-                Theme.cellRule, Theme.cageRule, Theme.accent, Theme.error, Theme.success,
+                Theme.cellRule, Theme.cageRule, Theme.accent, Theme.error, Theme.clueInk,
             ] {
                 let ui = UIColor(color)
                 if ui.resolvedColor(with: light) != ui.resolvedColor(with: dark) {

@@ -34,6 +34,11 @@ struct SettingsView: View {
             storeSection
         }
         .listStyle(.insetGrouped)
+        // The app is ink on paper everywhere else. A grouped list is the
+        // only surface that was not, so walking Home to here changed the
+        // wall colour and the card radius mid-flow.
+        .scrollContentBackground(.hidden)
+        .background(Theme.paper.ignoresSafeArea())
         .navigationTitle("Settings")
         .task { await entitlements.loadProduct() }
         .onChange(of: progress.settings.hapticsEnabled) { _, enabled in
@@ -107,7 +112,7 @@ struct SettingsView: View {
 
             if case .failed(let message) = entitlements.purchaseState {
                 Text(message)
-                    .font(.footnote)
+                    .font(Theme.secondary)
                     .foregroundStyle(Theme.error)
             }
         }

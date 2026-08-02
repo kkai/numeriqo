@@ -186,7 +186,7 @@ struct BoardView: View {
         ForEach(Array(game.puzzle.cages.enumerated()), id: \.offset) { _, cage in
             Text(cage.clueText)
                 .font(Theme.clueFont(size: geo.clueSize))
-                .foregroundStyle(Theme.ink.opacity(0.62))
+                .foregroundStyle(Theme.clueInk)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .padding(.horizontal, geo.cellSize * 0.09)

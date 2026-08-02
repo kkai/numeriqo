@@ -118,7 +118,7 @@ struct NumberPadView: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.body.weight(.medium))
+                .font(Theme.heading)
                 .foregroundStyle(active ? Theme.paper : Theme.ink)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(

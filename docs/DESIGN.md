@@ -57,7 +57,7 @@ Two ink-on-paper themes, and one accent that shifts by difficulty tier.
 | `paper` | `#F7F6F4` | `#121315` | behind the board |
 | `surface` | `#FFFFFF` | `#1D1F22` | cell fill |
 | `ink` | `#1A1A1E` | `#F2F0EC` | entered digits |
-| `inkSecondary` | 55% ink | 55% ink | notes |
+| `inkSecondary` | 78% ink | 76% ink | notes (raised from 55% to clear a contrast failure) |
 | `cellRule` | 22% ink, **dotted** | 26% ink, dotted | division inside a cage |
 | `cageRule` | 82% ink, **solid 2pt** | 80% ink | boundary between cages |
 | `tierAccent(_:)` | per tier (below) | per tier | the one expressive colour |
@@ -79,24 +79,72 @@ is a Phase-1 requirement, not a polish item.
 
 ## 3. Typography
 
-Typography carries the whole design, since colour is withheld.
+One rule: **this is a game about numbers, so the numerals are the display face.**
 
-- **One face throughout**: the system grotesque, **never `.rounded`**. Soft
-  terminals read as a friendly consumer app and fight both the ink surface and
-  the arithmetic.
-- **`.monospacedDigit()` everywhere.** Non-tabular figures make a numeric grid
-  shimmer as values change — the columns visibly breathe.
-- **Player entries**: `ink`, regular weight, 50% of cell.
-- **Cage targets**: 24% of cell, semibold, 62% ink, top-left of the anchor cell.
-  Never centred — the offset corner is part of the genre's grammar, and its
-  asymmetry is what makes the grid read as a puzzle rather than a table.
-- **The anchor cell reserves a clue gutter.** Its notes and its digit both start
-  below the clue. Without this, `144x` prints straight through `1 2 3` and
-  neither can be read — which is what the first build shipped.
-- **Candidate notes**: a micro-grid sized to `N`, not a fixed 3×3 — a 6×6 wants
-  1–6 and a 4×4 wants 1–4. Absent digits hold their slot so marks never reflow.
-  A candidate the current hint eliminates is struck **in place, in the tier
-  accent**: "3 candidates ruled out" has to be visible as *which three*.
+| | face |
+|---|---|
+| every numeral, and the wordmark | **SF Mono** |
+| everything read as prose: labels, body, buttons | **SF** |
+| candidate notes | **SF** (see below) |
+
+Inverting the usual hierarchy is the point. The biggest type on any screen of
+this app is a digit in a cell, so the interesting typographic decision is how
+the digits look, not how the title does.
+
+**Why monospaced.** A Latin square is a fixed grid where every cell is the same
+width and every digit appears exactly once in a line. A monospaced face is the
+typographic form of that constraint, and it is tabular by construction rather
+than by remembering `.monospacedDigit()` at each call site. It reads as
+computation, which is what this puzzle is.
+
+**And why not a serif.** A first pass set the numerals in New York and grounded
+the icon on dark slate. Both turned out to be Just Kakuro's: that app's `Theme`
+already uses `design: .serif` for its digits and clues, its paper is `#F2F3EE`
+against our `#F7F6F4`, and its ink is `#22262B` against our `#1A1A1E`. Two
+puzzle apps from one developer sharing a surface, a palette *and* a typeface is
+not a family, it is a collision. Numeriqo now takes the opposite of every axis
+it can: monospaced where Kakuro is serif, a light icon where Kakuro's is dark,
+a drawn cage where Kakuro has a diagonal.
+
+Notes stay in the proportional face, and that is a distinction rather than an
+exception: **entries are ink, notes are pencil.** The change of face separates a
+candidate from a committed answer without spending any colour on it.
+
+### The scale
+
+`Theme` carries the whole vocabulary, so no view reaches past it into raw
+SwiftUI styles:
+
+| token | role |
+|---|---|
+| `title` | the wordmark and screen titles |
+| `heading` | a card or section heading, and glyphs sized to sit beside one |
+| `body` | running prose |
+| `secondary` | supporting text under a heading or control |
+| `caption` | the quietest readable text |
+| `eyebrow` | a small-caps label, via `.eyebrow()` |
+| `numeral(_:)` | numerals presented as data: times, counts, prices, sizes |
+| `steady(_:)` | prose that happens to contain a number, so it does not jitter |
+
+Before this existed there were **23 font treatments across 57 call sites**, and
+only 7 went through a token, because the scale stopped at `heading` and there
+was nothing else to reach for. Build hierarchy with size and weight rather than
+more opacity: `inkSecondary` had to rise to 78% for contrast, which flattened
+the only value hierarchy a colourless design has.
+
+`.eyebrow()` exists because there were three treatments of one thing, at three
+sizes, with two different uppercasing mechanisms and tracking on one of the
+three. It applies `.textCase(.uppercase)`, never `String.uppercased()`, which is
+wrong in Turkish.
+
+### Board sizes
+
+Derived from `cellSize` in `BoardGeometry`, not from the type scale, because
+they must fit a cell:
+
+- Player entries: `ink`, regular, 50% of cell.
+- Cage targets: 24% of cell, semibold, `clueInk`, top-left.
+- Candidate notes: a micro-grid sized to N, 19% of cell.
 
 ## 4. Motion vocabulary
 

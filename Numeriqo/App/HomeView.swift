@@ -84,7 +84,7 @@ struct HomeView: View {
                 .font(Theme.title)
                 .foregroundStyle(Theme.ink)
             Text("Arithmetic puzzles, and how to solve them")
-                .font(.footnote)
+                .font(Theme.secondary)
                 .foregroundStyle(Theme.inkSecondary)
         }
         .padding(.top, Layout.Space.section)
@@ -98,15 +98,15 @@ struct HomeView: View {
         VStack(spacing: Layout.Space.step) {
             VStack(alignment: .leading, spacing: Layout.Space.snug) {
                 Text("New to this?")
-                    .font(.subheadline.weight(.semibold))
+                    .font(Theme.heading)
                     .foregroundStyle(Theme.ink)
                 Text("Fill the grid so no row or column repeats a digit, and every outlined cage hits its target. The tutorial fills the first few cells with you.")
-                    .font(.footnote)
+                    .font(Theme.body)
                     .foregroundStyle(Theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .card(padding: Layout.Space.block)
+            .card()
 
             Button("Show me how") { path.append(.lesson(nil)) }
                 .buttonStyle(.primary(tint: Theme.tierAccent(.gentle)))
@@ -133,7 +133,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: Layout.Space.step) {
                 VStack(alignment: .leading, spacing: Layout.Space.tight) {
                     picker("Grid", selection: $size, values: Array(3...9)) {
-                        Text("\($0)×\($0)")
+                        Text("\($0)×\($0)").font(Theme.numeral(.subheadline))
                     }
                     // Said in words rather than drawn as a padlock on the
                     // locked segments: a segmented control renders a Text or an
@@ -144,7 +144,7 @@ struct HomeView: View {
                     // had renamed itself to "Unlock 6×6".
                     if !entitlements.isUnlocked {
                         Text("Up to \(FeatureGate.freeSizeCeiling)×\(FeatureGate.freeSizeCeiling) is free. Bigger grids come with the full game.")
-                            .font(.caption)
+                            .font(Theme.steady(.caption))
                             .foregroundStyle(Theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -244,7 +244,7 @@ struct HomeView: View {
                          action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: Layout.Space.tight) {
-                Image(systemName: systemImage).font(.title3)
+                Image(systemName: systemImage).font(Theme.heading)
                 // `fixedSize` vertically because the audit reports "Text
                 // clipped" otherwise: inside a fixed-height tile the caption
                 // gets a box exactly one line high, which crops the descender
@@ -252,7 +252,7 @@ struct HomeView: View {
                 // the largest Dynamic Type sizes, where a third of the screen
                 // is not wide enough for it on one.
                 Text(title)
-                    .font(.caption)
+                    .font(Theme.caption)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -270,21 +270,21 @@ struct HomeView: View {
                      showsChevron: Bool = true, tint: Color = Theme.ink) -> some View {
         HStack(spacing: Layout.Space.step) {
             Image(systemName: systemImage)
-                .font(.title3)
+                .font(Theme.heading)
                 .foregroundStyle(tint)
                 .frame(minWidth: 24)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Layout.Space.tight) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(Theme.heading)
                     .foregroundStyle(Theme.ink)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(Theme.caption)
                     .foregroundStyle(Theme.inkSecondary)
             }
             Spacer(minLength: 0)
             if showsChevron {
                 Image(systemName: "chevron.right")
-                    .font(.caption)
+                    .font(Theme.caption)
                     .foregroundStyle(Theme.inkSecondary)
             }
         }
@@ -296,10 +296,7 @@ struct HomeView: View {
         _ title: String, selection: Binding<T>, values: [T], label: @escaping (T) -> Text
     ) -> some View {
         VStack(alignment: .leading, spacing: Layout.Space.snug) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Theme.inkSecondary)
-                .tracking(0.6)
+            Text(title).eyebrow()
             Picker(title, selection: selection) {
                 ForEach(values, id: \.self) { label($0).tag($0) }
             }
