@@ -10,6 +10,8 @@ import SwiftUI
 struct LessonView: View {
     /// nil is the rules lesson.
     let technique: Technique?
+    /// So a lesson can push the next one without going back to the list.
+    @Binding var path: [Route]
     var onFinishRules: (() -> Void)?
 
     @Environment(MasteryTracker.self) private var mastery
@@ -75,6 +77,7 @@ struct LessonView: View {
                     startButton(technique)
                 }
 
+                nextLesson(after: technique)
             }
             .padding(Layout.Space.gutter)
         }
@@ -100,6 +103,41 @@ struct LessonView: View {
         // advanced the curriculum. Completion is claimed by reading to the end.
         .onDisappear {
             if hasReadToEnd { mastery.recordLessonCompleted(technique) }
+        }
+    }
+
+    /// The way onward.
+    ///
+    /// A lesson used to end at a paywalled drill button, and the only exit was
+    /// Back to a list of seventeen rows. A ladder you have to climb down and
+    /// re-find your place on is not a ladder.
+    @ViewBuilder
+    private func nextLesson(after technique: Technique) -> some View {
+        if let next = Technique(rawValue: technique.rawValue + 1),
+           FeatureGate.isLessonAvailable(next, unlocked: entitlements.isUnlocked) {
+            Divider().padding(.vertical, Layout.Space.snug)
+            Button {
+                path.append(.lesson(next))
+            } label: {
+                HStack(spacing: Layout.Space.step) {
+                    VStack(alignment: .leading, spacing: Layout.Space.tight) {
+                        Text("Next").eyebrow()
+                        Text(next.displayName)
+                            .font(Theme.heading)
+                            .foregroundStyle(Theme.ink)
+                        Text(TechniqueContent.summary(for: next))
+                            .font(Theme.caption)
+                            .foregroundStyle(Theme.inkSecondary)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(Theme.caption)
+                        .foregroundStyle(Theme.inkSecondary)
+                }
+                .card()
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 

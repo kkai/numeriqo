@@ -30,7 +30,7 @@ struct ContentView: View {
         case .learn:
             LearnMenuView(path: $path)
         case .lesson(let technique):
-            LessonView(technique: technique) {
+            LessonView(technique: technique, path: $path) {
                 // "Start playing" now starts playing, on a board sized for
                 // somebody who has just learned the rules.
                 path = [.play(size: 4, difficulty: .gentle)]

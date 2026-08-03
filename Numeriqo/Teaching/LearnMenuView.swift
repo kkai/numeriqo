@@ -64,6 +64,18 @@ struct LearnMenuView: View {
         }
     }
 
+    /// The one lesson to do next: the first that is open and not yet finished.
+    ///
+    /// Without it the list is seventeen equal rows and no answer to "where was
+    /// I?". A curriculum that does not say what is next is a glossary.
+    private var nextUp: Technique? {
+        Technique.allCases.first {
+            mastery.state(of: $0) != .locked
+                && mastery.state(of: $0) != .learned
+                && FeatureGate.isLessonAvailable($0, unlocked: entitlements.isUnlocked)
+        }
+    }
+
     /// Techniques the player can actually open right now — neither locked
     /// behind mastery nor behind the paywall.
     private var openCount: Int {
@@ -108,6 +120,9 @@ struct LearnMenuView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
+                if technique != nil, technique == nextUp {
+                    Text("Next").eyebrow(Theme.accent)
+                }
             }
             .contentShape(Rectangle())
         }
@@ -120,14 +135,19 @@ struct LearnMenuView: View {
         .accessibilityValue(spoken(state, paywalled: paywalled))
     }
 
+    /// Two locks used to draw the same padlock, which is the single thing that
+    /// made this list hard to read: "you have not got here yet" and "this costs
+    /// money" are different answers to *why can I not tap it*, and a player
+    /// staring at fourteen identical padlocks cannot tell which is which.
+    /// A padlock now means money and nothing else.
     @ViewBuilder
     private func badge(state: MasteryTracker.MasteryState, paywalled: Bool) -> some View {
         Group {
             if paywalled {
-                Image(systemName: "lock")
+                Image(systemName: "lock.fill")
             } else {
                 switch state {
-                case .locked: Image(systemName: "lock")
+                case .locked: Image(systemName: "circle.dotted")
                 case .introduced: Image(systemName: "circle")
                 case .practicing: Image(systemName: "circle.lefthalf.filled")
                 case .learned: Image(systemName: "checkmark.circle.fill")

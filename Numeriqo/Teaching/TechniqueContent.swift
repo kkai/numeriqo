@@ -101,7 +101,7 @@ nonisolated enum TechniqueContent {
         case .nakedSubset:
             "Two cells that can only be 3 or 5 have used up both digits between them, even though neither is decided. Nothing else in that line can be a 3 or a 5. Three cells sharing three digits work the same way, and four sharing four."
         case .hiddenSubset:
-            "The reverse of Matching Sets. If 2, 4 and 7 can only go in three particular cells of a row, then those cells are exactly 2, 4 and 7. Every other candidate in them goes, however plausible it looked."
+            "Matching Sets runs the other way round too. If 2, 4 and 7 can only go in three particular cells of a row, then those cells are exactly 2, 4 and 7. Every other candidate in them goes, however plausible it looked."
         case .pointingCage:
             "Cages and lines constrain each other. If a cage must contain a 6 and every cell that could hold it lies in one column, that column's 6 is inside the cage. Clear it from the column's other cells."
         case .claimingLine:
@@ -109,7 +109,7 @@ nonisolated enum TechniqueContent {
         case .ruleOfN:
             "A 6×6 row always totals 21. Add up the cages sitting wholly inside a row and subtract. Whatever is left belongs to the cells they don't cover, and if that's one cell you have its digit outright."
         case .outie:
-            "The same arithmetic, one step further. If the cages touching a row cover it and spill over by exactly one cell, subtract the row's total from theirs. What remains is the spilled cell: a digit found outside the line you were looking at."
+            "Rule of N again, one step further. If the cages touching a row cover it and spill over by exactly one cell, subtract the row's total from theirs. What remains is the spilled cell: a digit found outside the line you were looking at."
         case .parity:
             "Odd and even are information on their own. A 6×6 line holds exactly three odd digits. Count the odd cells you've settled, and once you reach three, everything still open in that line must be even. No enumeration needed."
         case .xWing:
