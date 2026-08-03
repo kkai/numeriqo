@@ -42,6 +42,9 @@
                   Identifier = "AccessibilityAuditTests">
                </Test>
                <Test
+                  Identifier = "DarkAccessibilityAuditTests">
+               </Test>
+               <Test
                   Identifier = "ScrollingTests">
                </Test>
                <Test

@@ -176,7 +176,10 @@ struct NotesView: View {
     var eliminated: Set<Int> = []
     let size: Int
     let geometry: BoardGeometry
-    var accent: Color = .accentColor
+    /// `Theme.accent`, never `.accentColor`. Always overridden at the one call
+    /// site today, but a live default reaching the asset catalogue is how a
+    /// future caller silently renders the system blue on an ink board.
+    var accent: Color = Theme.accent
     var topInset: CGFloat = 0
 
     private var columns: Int { size <= 4 ? 2 : 3 }

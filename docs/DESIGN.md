@@ -74,8 +74,16 @@ player climbs, which is a quiet progress signal:
 
 Gentle `#3E7CB1` → Steady `#4E8A6F` → Sharp `#B8863B` → Deep `#A85438` → Severe `#7C4B7D`
 
-Full support for light/dark, Dynamic Type, Increase Contrast, and Reduce Motion
-is a Phase-1 requirement, not a polish item.
+Full support for light/dark, Dynamic Type and Reduce Motion is a Phase-1
+requirement, not a polish item, and all three are honoured. **Increase Contrast
+is not**: `.accessibilityContrast` is read nowhere in the codebase. Recorded
+here rather than left as a claim the code does not meet.
+
+Light and dark are audited separately, by `AccessibilityAuditTests` and its
+`DarkAccessibilityAuditTests` subclass, because contrast is computed against the
+actual background: passing in one appearance says nothing about the other. The
+palette was built as light/dark pairs from the start, but until that subclass
+existed nothing had ever rendered the dark side.
 
 ## 3. Typography
 

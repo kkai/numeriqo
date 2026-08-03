@@ -11,13 +11,19 @@
 
 import XCTest
 
-final class AccessibilityAuditTests: XCTestCase {
+class AccessibilityAuditTests: XCTestCase {
 
     private var app: XCUIApplication!
+
+    /// Overridden by `DarkAccessibilityAuditTests`. Contrast is computed against
+    /// the actual background, so a screen passing in light proves nothing about
+    /// the same screen in dark.
+    class var appearance: XCUIDevice.Appearance { .light }
 
     override func setUp() {
         // So one run surfaces every finding rather than stopping at the first.
         continueAfterFailure = true
+        XCUIDevice.shared.appearance = Self.appearance
         app = XCUIApplication()
         // From a clean slate every time. These audits tap Play and expect a
         // board; with a game already saved they get the "Start a new game?"
@@ -143,4 +149,15 @@ private func ignoreBoardTypeScaling(_ issue: XCUIAccessibilityAuditIssue) -> Boo
     let label = issue.element?.label ?? ""
     // Board cells label themselves "Row 3, column 2, ...".
     return label.hasPrefix("Row ")
+}
+
+
+/// Every screen again, inverted.
+///
+/// The colour system was built as light/dark pairs from the start and
+/// `ThemeIsolationTests` proves the pairs resolve, but resolving is not the same
+/// as being readable: `inkSecondary` had to rise from 55% to 78% in light to
+/// clear a contrast failure, and nothing had ever checked the dark side.
+final class DarkAccessibilityAuditTests: AccessibilityAuditTests {
+    override class var appearance: XCUIDevice.Appearance { .dark }
 }

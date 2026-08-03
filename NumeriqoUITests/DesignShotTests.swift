@@ -24,7 +24,15 @@ final class DesignShotTests: XCTestCase {
         try? data.write(to: dir.appendingPathComponent("shot-\(name).png"))
     }
 
-    private func launch(hugeType: Bool = false, solved: Bool = false) {
+    /// Reset for every test. `XCUIDevice.appearance` is simulator-wide and
+    /// survives a relaunch, so a dark test would otherwise tint every later one.
+    override func setUp() {
+        XCUIDevice.shared.appearance = .light
+    }
+
+    private func launch(hugeType: Bool = false, solved: Bool = false,
+                        dark: Bool = false) {
+        XCUIDevice.shared.appearance = dark ? .dark : .light
         app = XCUIApplication()
         app.launchArguments = ["-uiTestResetState"]
             + (hugeType ? ["-UIPreferredContentSizeCategoryName",
@@ -98,6 +106,40 @@ final class DesignShotTests: XCTestCase {
         app.buttons["Settings"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
         shot("09-settings")
+    }
+
+    /// The same surfaces inverted. Every screenshot in this project had been
+    /// light, so the dark side of a palette built entirely from light/dark pairs
+    /// had never actually been seen.
+    func testEverySurfaceInDark() {
+        launch(dark: true)
+        XCTAssertTrue(app.buttons["Show me how"].waitForExistence(timeout: 15))
+        shot("dark-01-first-run")
+
+        playOnePuzzle()
+        shot("dark-02-board")
+
+        app.buttons["Hint"].firstMatch.tap()
+        shot("dark-03-hint")
+        app.buttons["Dismiss hint"].firstMatch.tap()
+
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Continue"].waitForExistence(timeout: 10))
+        shot("dark-04-home")
+
+        app.buttons["Learn"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Learn"].waitForExistence(timeout: 5))
+        shot("dark-05-learn")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.buttons["Progress"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Progress"].waitForExistence(timeout: 5))
+        shot("dark-06-progress")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.buttons["Settings"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        shot("dark-07-settings")
     }
 
     func testTutorialAndLargeType() {
