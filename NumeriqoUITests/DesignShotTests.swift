@@ -24,13 +24,33 @@ final class DesignShotTests: XCTestCase {
         try? data.write(to: dir.appendingPathComponent("shot-\(name).png"))
     }
 
-    private func launch(hugeType: Bool = false) {
+    private func launch(hugeType: Bool = false, solved: Bool = false) {
         app = XCUIApplication()
-        app.launchArguments = ["-uiTestResetState"] + (hugeType ? [
-            "-UIPreferredContentSizeCategoryName",
-            "UICTContentSizeCategoryAccessibilityXXXL",
-        ] : [])
+        app.launchArguments = ["-uiTestResetState"]
+            + (hugeType ? ["-UIPreferredContentSizeCategoryName",
+                           "UICTContentSizeCategoryAccessibilityXXXL"] : [])
+            + (solved ? ["-uiTestSolveBoard"] : [])
         app.launch()
+    }
+
+    /// The screen that prompted this pass: the win banner used to float over the
+    /// completed grid and hide its bottom row.
+    func testFinishScreen() {
+        launch(solved: true)
+        XCTAssertTrue(app.buttons["Skip, I know Calcudoku"].waitForExistence(timeout: 15))
+        playOnePuzzle()
+
+        // One cell left, so the win comes from a real placement.
+        let last = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Row 4, column 4"))
+            .firstMatch
+        XCTAssertTrue(last.waitForExistence(timeout: 10))
+        last.tap()
+        for digit in 1...4 where !app.buttons["New puzzle"].exists {
+            app.buttons["Digit \(digit)"].tap()
+        }
+        XCTAssertTrue(app.buttons["New puzzle"].waitForExistence(timeout: 10))
+        shot("12-finish")
     }
 
     /// Into a game, and far enough to leave a save and a best time behind, so

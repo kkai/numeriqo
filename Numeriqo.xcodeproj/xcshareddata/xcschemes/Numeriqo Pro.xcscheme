@@ -47,9 +47,6 @@
                <Test
                   Identifier = "TutorialWalkTests">
                </Test>
-               <Test
-                  Identifier = "DesignShotTests">
-               </Test>
             </SkippedTests>
          </TestableReference>
       </Testables>

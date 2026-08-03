@@ -80,9 +80,14 @@ struct HomeView: View {
 
     private var wordmark: some View {
         VStack(spacing: Layout.Space.tight) {
-            Text("Numeriqo")
+            Text(AppIdentity.name)
                 .font(Theme.title)
                 .foregroundStyle(Theme.ink)
+                // "Numeriqo Pro" is twelve monospaced characters at largeTitle,
+                // which overflows a narrow phone. Scale rather than truncate: a
+                // wordmark reading "Numeriqo P..." is worse than a small one.
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
             Text("Arithmetic puzzles, and how to solve them")
                 .font(Theme.secondary)
                 .foregroundStyle(Theme.inkSecondary)
@@ -130,32 +135,63 @@ struct HomeView: View {
                 .buttonStyle(.plain)
             }
 
+            // Both setup controls wear the same card as Continue and Today's
+            // puzzle, and carry their label inside it. An eyebrow above one and
+            // a label inside the other read as two different kinds of control.
             VStack(alignment: .leading, spacing: Layout.Space.step) {
-                VStack(alignment: .leading, spacing: Layout.Space.tight) {
-                    picker("Grid", selection: $size, values: Array(3...9)) {
-                        Text("\($0)×\($0)").font(Theme.numeral(.subheadline))
+                gridPicker
+                VStack(alignment: .leading, spacing: Layout.Space.snug) {
+                    Text("Difficulty")
+                        .font(Theme.heading)
+                        .foregroundStyle(Theme.ink)
+                    Picker("Difficulty", selection: $difficulty) {
+                        ForEach(Difficulty.allCases, id: \.self) {
+                            Text($0.displayName).tag($0)
+                        }
                     }
-                    // Said in words rather than drawn as a padlock on the
-                    // locked segments: a segmented control renders a Text or an
-                    // Image, never both, so an inlined lock glyph is silently
-                    // dropped and the caption ends up promising a mark that
-                    // isn't there. Without any of this you learned a size was
-                    // paid only after picking it and noticing the Play button
-                    // had renamed itself to "Unlock 6×6".
-                    if !entitlements.isUnlocked {
-                        Text("Up to \(FeatureGate.freeSizeCeiling)×\(FeatureGate.freeSizeCeiling) is free. Bigger grids come with the full game.")
-                            .font(Theme.steady(.caption))
-                            .foregroundStyle(Theme.inkSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    .pickerStyle(.segmented)
                 }
-                picker("Difficulty", selection: $difficulty,
-                       values: Difficulty.allCases) { Text($0.displayName) }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
             }
             .padding(.top, Layout.Space.tight)
 
             playButton
         }
+    }
+
+    /// Grid size, in the same card and the same control as Difficulty.
+    ///
+    /// The segments carry the bare number rather than "3×3", because the label
+    /// above already says Grid. Seven segments of "3×3" gave each about 48pt
+    /// and was most of what made this screen feel crammed; seven single digits
+    /// fit comfortably.
+    private var gridPicker: some View {
+        VStack(alignment: .leading, spacing: Layout.Space.snug) {
+            Text("Grid")
+                .font(Theme.heading)
+                .foregroundStyle(Theme.ink)
+            Picker("Grid", selection: $size) {
+                ForEach(Array(3...9), id: \.self) { value in
+                    Text("\(value)").font(Theme.numeral(.subheadline)).tag(value)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("Grid size")
+            .accessibilityValue("\(size) by \(size)")
+
+            // A segmented control renders a Text or an Image, never both, so a
+            // padlock cannot sit on the locked segments. Said in words instead,
+            // and inside the card with the control it describes.
+            if !entitlements.isUnlocked {
+                Text("Up to \(FeatureGate.freeSizeCeiling)×\(FeatureGate.freeSizeCeiling) is free. Bigger grids come with the full game.")
+                    .font(Theme.steady(.caption))
+                    .foregroundStyle(Theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
     }
 
     private var playButton: some View {
@@ -292,15 +328,4 @@ struct HomeView: View {
         .contentShape(Rectangle())
     }
 
-    private func picker<T: Hashable>(
-        _ title: String, selection: Binding<T>, values: [T], label: @escaping (T) -> Text
-    ) -> some View {
-        VStack(alignment: .leading, spacing: Layout.Space.snug) {
-            Text(title).eyebrow()
-            Picker(title, selection: selection) {
-                ForEach(values, id: \.self) { label($0).tag($0) }
-            }
-            .pickerStyle(.segmented)
-        }
-    }
 }

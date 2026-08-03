@@ -52,7 +52,9 @@ final class AccessibilityAuditTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Continue"].waitForExistence(timeout: 10))
 
-        XCTExpectFailure("Two 'partially unsupported' Dynamic Type findings on the stock segmented Picker, which the app does not style. Everything Numeriqo draws on this screen uses semantic styles.")
+        // No expectation here any more. Putting both setup controls inside cards
+        // cleared the two Dynamic Type findings the stock segmented pickers used
+        // to produce, and XCTExpectFailure is strict, so it said so.
         try app.performAccessibilityAudit { issue in
             ignoreSystemChromeContrastWarning(issue)
         }

@@ -110,29 +110,37 @@ struct GameView: View {
 
     @ViewBuilder
     private func content(_ game: NumeriqoGame) -> some View {
-        VStack(spacing: Layout.Space.block) {
-            BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
-                .padding(.horizontal, Layout.Space.gutter)
+        // The board is sized from the width and nothing else.
+        //
+        // It used to be an `aspectRatio(1, .fit)` with no cap in a VStack, so it
+        // absorbed whatever height was left. Removing the pad on a win therefore
+        // *grew* the grid at the exact moment the player wants to look at it,
+        // and the win banner, floating in an `.overlay`, then covered the bottom
+        // row of the puzzle they had just finished. DESIGN.md §7 already asked
+        // for this: the board never moves when what sits under it changes.
+        GeometryReader { proxy in
+            // The exact drawn size, not the space available. `BoardGeometry`
+            // caps a cell at 72pt, so a 4x4 is 288pt wide however wide the
+            // phone is; framing it to the full width reserved 60-odd points of
+            // nothing on either side and left the grid looking adrift.
+            let available = proxy.size.width - Layout.Space.gutter * 2
+            let cell = min((available / CGFloat(game.puzzle.size)).rounded(.down), 72)
+            let side = cell * CGFloat(game.puzzle.size)
 
-            if let hint {
-                HintBanner(
-                    hint: hint,
-                    onMore: { escalate(game) },
-                    onApply: { apply(hint, to: game) },
-                    onDismiss: { self.hint = nil },
-                    onUnlock: { paywall.present(.teachingHints) }
-                )
-            } else {
-                hintButton(game)
-            }
+            VStack(spacing: Layout.Space.block) {
+                BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
+                    .frame(width: side, height: side)
+                    .padding(.top, Layout.Space.block)
 
-            // Hidden once won. It stayed on screen at full opacity while every
-            // key silently swallowed taps, because `press`/`tap`/`undo` all
-            // guard on `phase == .playing`.
-            if game.phase == .playing {
-                NumberPadView(game: game)
+                // The gap belongs here on purpose: it is where a hint banner
+                // appears, so reserving it means asking for a hint does not
+                // shove the board upward mid-thought.
+                Spacer(minLength: 0)
+
+                footer(game)
                     .padding(.horizontal, Layout.Space.gutter)
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .padding(.bottom, Layout.Space.step)
         .task(id: game.phase) {
@@ -166,14 +174,43 @@ struct GameView: View {
             if game.isDaily { progress.recordDailyCompleted(day: DailyPuzzle.today) }
             AccessibilityNotification.Announcement(winMessage).post()
         }
-        .overlay(alignment: .bottom) {
-            if game.phase == .won { winBanner }
-        }
         // VoiceOver has no way to notice a banner appearing at the bottom of
         // the screen, so say it.
         .onChange(of: hint?.text) { _, text in
             guard let text else { return }
             AccessibilityNotification.Announcement(text).post()
+        }
+    }
+
+    /// Everything below the board, in one slot.
+    ///
+    /// One slot rather than three stacked conditionals, because each of these
+    /// replaces the others: you are either playing, reading a hint, or finished.
+    /// The win banner lives here instead of in an `.overlay` so it sits *below*
+    /// the completed grid rather than on top of it.
+    @ViewBuilder
+    private func footer(_ game: NumeriqoGame) -> some View {
+        VStack(spacing: Layout.Space.block) {
+            if let hint {
+                HintBanner(
+                    hint: hint,
+                    onMore: { escalate(game) },
+                    onApply: { apply(hint, to: game) },
+                    onDismiss: { self.hint = nil },
+                    onUnlock: { paywall.present(.teachingHints) }
+                )
+            } else if game.phase == .playing {
+                hintButton(game)
+            }
+
+            // The pad is hidden once won. It stayed on screen at full opacity
+            // while every key silently swallowed taps, because `press`/`tap`/
+            // `undo` all guard on `phase == .playing`.
+            if game.phase == .playing {
+                NumberPadView(game: game)
+            } else {
+                winBanner
+            }
         }
     }
 
@@ -201,8 +238,7 @@ struct GameView: View {
                     .buttonStyle(.secondary)
             }
         }
-                .card()
-        .padding(.bottom, Layout.Space.step)
+        .card()
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(winMessage)
@@ -336,6 +372,25 @@ struct GameView: View {
             if progress.settings.autoNotes { fresh.fillAutoNotes() }
             game = fresh
         }
+
+        if let game { Self.solveForUITestsIfAsked(game) }
+    }
+
+    /// Fills everything but the last cell when a UI test asks for it.
+    ///
+    /// The win screen was otherwise untestable and un-screenshottable: a UI test
+    /// cannot know the solution, and the whole point of the board is that the
+    /// app does not hand it over. This leaves one cell empty so the test still
+    /// reaches the win through a real placement rather than by being told it
+    /// won. Debug-only, and inert without the launch argument.
+    private static func solveForUITestsIfAsked(_ game: NumeriqoGame) {
+        #if DEBUG
+        guard CommandLine.arguments.contains("-uiTestSolveBoard") else { return }
+        let cells = game.puzzle.allCells
+        for cell in cells.dropLast() {
+            game.place(game.puzzle.solutionValue(at: cell), at: cell)
+        }
+        #endif
     }
 }
 

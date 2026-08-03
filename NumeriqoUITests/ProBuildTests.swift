@@ -45,14 +45,29 @@ final class ProBuildTests: XCTestCase {
         let app = launchPro()
         reachHome(app)
 
-        // The free build re-labels this to "Unlock 9×9" and shows a caption
-        // about which grids are paid.
-        app.buttons["9×9"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["Play"].exists, "Pro should offer 9×9 outright")
+        // Segments carry the bare size, since the card's label says Grid.
+        let nine = app.buttons["9"].firstMatch
+        XCTAssertTrue(nine.waitForExistence(timeout: 5))
+        nine.tap()
+
+        // The free build re-labels the primary to "Unlock 9×9", and shows a
+        // caption about which grids are paid.
+        XCTAssertTrue(app.buttons["Play"].waitForExistence(timeout: 5),
+                      "Pro should offer 9×9 outright")
         XCTAssertFalse(app.buttons["Unlock 9×9"].exists)
-        XCTAssertFalse(
-            app.staticTexts["Up to 5×5 is free. Bigger grids come with the full game."].exists,
-            "the free-tier caption should not appear in Pro")
+        XCTAssertFalse(app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "is free. Bigger grids")
+        ).firstMatch.exists, "the free-tier caption should not appear in Pro")
+    }
+
+    /// The Pro build shipped calling itself "Numeriqo" on its own home screen,
+    /// because the wordmark was a literal and only Settings knew the SKU.
+    func testTheWordmarkSaysPro() {
+        let app = launchPro()
+        reachHome(app)
+        XCTAssertTrue(app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "Numeriqo Pro")
+        ).firstMatch.exists, "the Pro build should call itself Numeriqo Pro")
     }
 
     func testSettingsConfirmsProAndOffersNoRestore() {

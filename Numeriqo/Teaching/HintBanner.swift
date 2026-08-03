@@ -27,7 +27,6 @@ struct HintBanner: View {
             footer
         }
         .card()
-        .padding(.horizontal, Layout.Space.gutter)
         .accessibilityElement(children: .contain)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .animation(reduceMotion ? nil : Motion.overlay, value: hint.level)

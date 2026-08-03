@@ -181,7 +181,8 @@ enum TutorialScript {
         Solved. That's the whole game: fill the grid, never repeat a digit in a \
         row or column, and make every cage hit its target. Everything else is a \
         shortcut for finding the next digit faster, and Learn teaches those one \
-        at a time.
+        at a time. If you'd rather be told the moment a digit is wrong, Settings \
+        can mark them as you place them.
         """),
     ]
 }

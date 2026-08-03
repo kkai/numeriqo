@@ -25,6 +25,17 @@ protocol EntitlementSource: Sendable {
     func transactionUpdates() -> AsyncStream<Void>
 }
 
+/// What this build calls itself.
+///
+/// One source of truth rather than a literal per screen: the Pro build shipped
+/// calling itself "Numeriqo" on its own home screen, because only Settings knew
+/// which SKU it was. Matches `INFOPLIST_KEY_CFBundleDisplayName` for each target.
+nonisolated enum AppIdentity {
+    static var name: String {
+        EntitlementStore.isUnlockedByBuild ? "Numeriqo Pro" : "Numeriqo"
+    }
+}
+
 @Observable @MainActor
 final class EntitlementStore {
 
@@ -67,7 +78,9 @@ final class EntitlementStore {
     /// Existing Numeriqo Pro owners bought "the full Numeriqo", and 3.0 is what
     /// the full Numeriqo now is. They are never asked to pay again, and this
     /// build never talks to StoreKit for entitlement.
-    static var isUnlockedByBuild: Bool {
+    /// `nonisolated`: it reads a compile flag and nothing else, so it is
+    /// usable from `AppIdentity` and from tests without hopping to the actor.
+    nonisolated static var isUnlockedByBuild: Bool {
         #if NUMERIQO_PRO
         true
         #else

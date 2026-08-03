@@ -88,20 +88,35 @@ struct PaywallView: View {
                 Group {
                     if entitlements.purchaseState == .purchasing {
                         ProgressView().tint(Theme.paper)
+                    } else if let product = entitlements.product {
+                        // Never hardcode the price. App Review rejects a button
+                        // that disagrees with the real localized price, so this
+                        // always comes from StoreKit.
+                        Text("Unlock everything · \(product.displayPrice)")
                     } else {
-                        // Never hardcode the price — App Review rejects a button
-                        // that disagrees with the real localized price.
-                        Text(entitlements.product.map { "Unlock everything · \($0.displayPrice)" }
-                             ?? "Unlock everything")
+                        Text("Unlock everything")
                     }
                 }
             }
             .buttonStyle(.primary)
             .disabled(entitlements.purchaseState == .purchasing)
 
-            Text("One purchase, and that's the whole game.")
-                .font(Theme.secondary)
-                .foregroundStyle(Theme.inkSecondary)
+            // Says which of the two silent states you are in. Without this the
+            // button reads as a finished control that simply has no price, and
+            // a store that never answered looks identical to a free upgrade.
+            Group {
+                if entitlements.product != nil {
+                    Text("One purchase, and that's the whole game.")
+                } else if entitlements.purchaseState == .loadingProduct {
+                    Text("Fetching the price…")
+                } else {
+                    Text("The App Store hasn't sent a price yet. Tapping will try again.")
+                }
+            }
+            .font(Theme.secondary)
+            .foregroundStyle(Theme.inkSecondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
 
             Button("Restore purchases") { Task { await entitlements.restore() } }
                 .buttonStyle(.quiet)

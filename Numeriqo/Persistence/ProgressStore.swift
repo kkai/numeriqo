@@ -43,10 +43,19 @@ final class ProgressStore {
     struct Settings: Codable, Equatable, Sendable {
         var autoNotes = false
         var hapticsEnabled = true
-        /// Immediate error feedback, compared against the solution. Default on:
-        /// see docs/TEACHING.md §6 — feedback latency is what makes a mistake
-        /// attributable to the inference that caused it.
-        var showErrors = true
+        /// Immediate error feedback, compared against the solution.
+        ///
+        /// **Off by default**, though docs/TEACHING.md §6 argues that short
+        /// feedback latency is what makes a mistake attributable to the
+        /// inference that caused it. That argument still holds once the setting
+        /// is on. It is off to begin with because an app that marks you wrong
+        /// before you asked reads as impatient, and because the hint button
+        /// already reports errors ahead of anything else, so a mistake stays
+        /// findable on demand.
+        ///
+        /// Existing players are unaffected: `load(_:key:) ?? Settings()` only
+        /// falls back to these defaults when nothing is stored.
+        var showErrors = false
         /// Cell-first input for players who prefer it. Number-first teaches
         /// scanning, so it is the default.
         var cellFirstInput = false
