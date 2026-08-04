@@ -70,6 +70,37 @@ final class ProBuildTests: XCTestCase {
         ).firstMatch.exists, "the Pro build should call itself Numeriqo Pro")
     }
 
+    /// A 9x9 is the tightest the layout ever gets, and only Pro can open one.
+    ///
+    /// The board used to be sized from width alone, so on an iPad in landscape
+    /// a 648pt grid plus the pad exceeded the height and pushed the number pad
+    /// off the bottom. Run this on an iPad to mean anything.
+    func testTheLargestGridFitsInBothOrientations() {
+        let app = launchPro()
+        reachHome(app)
+
+        app.buttons["9"].firstMatch.tap()
+        app.buttons["Play"].firstMatch.tap()
+        // reachHome leaves a saved game behind, so Play asks before replacing it.
+        let confirm = app.buttons["Start new game"]
+        if confirm.waitForExistence(timeout: 3) { confirm.tap() }
+        XCTAssertTrue(app.buttons["Digit 9"].waitForExistence(timeout: 60),
+                      "the 9x9 never appeared")
+
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            XCUIDevice.shared.orientation = orientation
+            // Let the rotation animation finish, or the assertions and the
+            // screenshot both catch the board mid-transform.
+            _ = XCTWaiter.wait(for: [expectation(description: "settle")], timeout: 2)
+            XCTAssertTrue(app.buttons["Digit 9"].isHittable,
+                          "the pad left the screen in \(orientation.rawValue)")
+            XCTAssertTrue(app.descendants(matching: .any)
+                .matching(NSPredicate(format: "label BEGINSWITH %@", "Row 9, column 9"))
+                .firstMatch.isHittable, "the last cell left the screen")
+        }
+        XCUIDevice.shared.orientation = .portrait
+    }
+
     func testSettingsConfirmsProAndOffersNoRestore() {
         let app = launchPro()
         app.buttons["Settings"].firstMatch.tap()

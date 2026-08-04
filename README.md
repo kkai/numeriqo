@@ -4,18 +4,21 @@ A major update turning Numeriqo into a Calcudoku game that teaches you to
 actually get good at it — Good Sudoku's teaching model, applied to a genre
 nobody has done it for.
 
-**Status:** engine, board, teaching, progression and store complete and verified
-on device. Remaining: feel/accessibility polish (Phase 8) and ship (Phase 9).
+**Status:** feature complete on both SKUs, archived and exported for the App
+Store. Remaining before submission is App Store Connect work, not code: the
+in-app purchase does not exist yet. See [`SHIPPING.md`](docs/SHIPPING.md).
 
 | Suite | Result |
 |---|---|
 | Engine harness (`swiftc`, no simulator) | 9,689 checks, 20,472 differential comparisons |
-| App, teaching, persistence, store (`xcodebuild test`) | 38 tests, 5 suites |
-| Accessibility audits (`NumeriqoUITests`) | 6 screens, 4 clean, 2 recorded |
+| App, teaching, persistence, store (`xcodebuild test`) | 55 tests, 7 suites |
+| UI, including both appearances (`NumeriqoUITests`) | 24 tests; audits over 7 screens in light and dark |
 
-16 techniques, 85.6% curriculum solvability, generation 62ms median / 191ms
-worst at 9x9. Every shipped puzzle is provably unique **and** provably
-finishable by the curriculum.
+16 techniques and generation at 62ms median, 191ms worst at 9x9. Every shipped
+puzzle is provably unique **and** provably finishable by the curriculum, because
+the generator discards any candidate the solver cannot finish. The 85.6% figure
+in `TECHNIQUES.md` is the *acceptance rate* of unique candidates, not a gap in
+what ships.
 
 ## Documents
 

@@ -123,24 +123,50 @@ struct GameView: View {
             // caps a cell at 72pt, so a 4x4 is 288pt wide however wide the
             // phone is; framing it to the full width reserved 60-odd points of
             // nothing on either side and left the grid looking adrift.
-            let available = proxy.size.width - Layout.Space.gutter * 2
+            //
+            // Constrained by height as well as width, because iPad landscape is
+            // wide and short. Sizing from width alone gave a 9x9 the full 648pt
+            // at the cell cap, which together with the pad beneath it exceeded
+            // the height of an iPad mini on its side and pushed the number pad
+            // off the bottom of the screen. On a phone the width still binds, so
+            // this changes nothing there.
+            // Landscape on a tablet is wide and short, so stacking wastes the
+            // width and starves the height. Side by side uses both.
+            let sideBySide = proxy.size.width > proxy.size.height * 1.2
+            let column = sideBySide ? proxy.size.width * 0.55 : proxy.size.width
+            let byWidth = column - Layout.Space.gutter * 2
+            let byHeight = proxy.size.height * (sideBySide ? 0.86 : 0.62)
+            let available = min(byWidth, byHeight)
             let cell = min((available / CGFloat(game.puzzle.size)).rounded(.down), 72)
             let side = cell * CGFloat(game.puzzle.size)
 
-            VStack(spacing: Layout.Space.block) {
-                BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
-                    .frame(width: side, height: side)
-                    .padding(.top, Layout.Space.block)
+            let board = BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
+                .frame(width: side, height: side)
 
-                // The gap belongs here on purpose: it is where a hint banner
-                // appears, so reserving it means asking for a hint does not
-                // shove the board upward mid-thought.
-                Spacer(minLength: 0)
+            if sideBySide {
+                HStack(spacing: Layout.Space.block) {
+                    board
+                        .frame(maxWidth: .infinity)
+                    footer(game)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, Layout.Space.gutter)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            } else {
+                VStack(spacing: Layout.Space.block) {
+                    board
+                        .padding(.top, Layout.Space.block)
 
-                footer(game)
-                    .padding(.horizontal, Layout.Space.gutter)
+                    // The gap belongs here on purpose: it is where a hint banner
+                    // appears, so reserving it means asking for a hint does not
+                    // shove the board upward mid-thought.
+                    Spacer(minLength: 0)
+
+                    footer(game)
+                        .padding(.horizontal, Layout.Space.gutter)
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
-            .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .padding(.bottom, Layout.Space.step)
         .task(id: game.phase) {

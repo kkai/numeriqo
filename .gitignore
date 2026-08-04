@@ -17,3 +17,6 @@ build/
 # Swift Package Manager
 .build/
 .swiftpm/
+
+# Archives, exports and generated screenshots
+build/

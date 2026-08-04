@@ -30,11 +30,18 @@ struct NumeriqoApp: App {
     /// only reachable from particular states, and a UI test that inherits
     /// whatever the previous test left behind passes alone and fails in a full
     /// run. Must happen before any store reads defaults.
+    ///
+    /// **`#if DEBUG` is not optional here.** Without it a release binary carries
+    /// a switch that deletes every best time, streak and saved game. Nothing in
+    /// a shipped app should be one launch argument away from that, however
+    /// awkward the argument is to pass.
     private static func resetStateIfUITestingAsksFor() {
+        #if DEBUG
         guard CommandLine.arguments.contains("-uiTestResetState"),
               let domain = Bundle.main.bundleIdentifier else { return }
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
+        #endif
     }
 
     var body: some Scene {
