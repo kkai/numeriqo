@@ -40,12 +40,17 @@ price yet", the product is not live to StoreKit.
 ## 2. Metadata
 
 Copy is drafted in `STORE.md`: subtitle, keywords, promotional text,
-description, What's New for each SKU, and the App Review notes. Two things it
-cannot supply because they do not exist yet:
+description, What's New for each SKU, and the App Review notes.
 
-- **Privacy policy URL** (required). The app collects nothing, so the policy is
-  short, but the URL must resolve.
-- **Support URL** (required).
+The privacy policy URL and support URL already exist on both apps and return
+200 (`kaikunze.de/numeriqo/numeriqo-privacy.html` and `kaikunze.de/numeriqo/`).
+An earlier draft of this file said they were missing, which was wrong: it was
+checking the repo instead of App Store Connect.
+
+**App Review Information requires a contact phone in `+countrycode` format.**
+Creating an `appStoreReviewDetails` record without one fails; and a version
+created from a previous one already *has* a review detail, so it must be
+PATCHed rather than POSTed.
 
 Also set: age rating, copyright, and category (Puzzle). The App Privacy answers
 must be **Data Not Collected**, which is what `PrivacyInfo.xcprivacy` declares.
@@ -106,8 +111,9 @@ Connect API key. That step is yours; nothing here uploads.
 `MONETIZATION.md` §3 is binding on this:
 
 1. Ship 3.0 to **both SKUs simultaneously**.
-2. Then set Numeriqo Pro to **removed from sale**. Existing owners keep it, can
-   re-download it, and keep receiving updates.
+2. **Numeriqo Pro stays on sale**, at $4.99 to match the in-app purchase on the
+   free app. This reverses the "remove from sale" plan in `MONETIZATION.md` §3,
+   which the doc now records.
 3. Keep shipping Pro builds. One extra archive per release.
 
 **Do not delete the Pro app.** Deleting it strands paying customers, which is
@@ -125,6 +131,9 @@ the exact thing the `NUMERIQO_PRO` flag exists to prevent.
       the app's own strings; metadata is manual.
 - [ ] Clearance search done. `RULES.md` §6 asks for counsel confirming
       *Calcudoku* and *MathDoku* are unregistered in Class 9. **Not done.**
+- [ ] **The LIVE 2.x listings still carry `kenken` in the keyword field** on
+      both apps. 3.0's keywords are clean, but 2.x stays published until 3.0 is
+      approved. Keywords are editable on a live version without a new build.
 - [ ] Both apps tested on a real device from a Release build
 
 ## 7. Known gaps, shipping anyway
