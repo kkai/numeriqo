@@ -24,9 +24,12 @@ In App Store Connect, on **Numeriqo** (6749287069):
 - Price: **$4.99** (tier matching Just Kakuro)
 - **Family Sharing: on**
 - Display name: `Numeriqo Full`
-- Description: *Every lesson, every drill, teaching hints, large grids and stats.
-  One purchase, forever.*
-- Upload a review screenshot (the paywall will do).
+- Description: `Lessons, drills, teaching hints and grids to 9×9.`
+  **The field caps at 55 characters.** The sentence in `MONETIZATION.md` §1 is
+  88 and App Store Connect rejects it.
+- Upload a review screenshot. Use
+  `build/screenshots/iap-review/paywall-2048x2732.png`, with
+  `paywall-1536x2048.png` as a fallback.
 - **Attach it to the 3.0 version** so it is reviewed with the build. An IAP
   submitted on its own sits in "Waiting for Review" indefinitely.
 
@@ -47,6 +50,18 @@ cannot supply because they do not exist yet:
 Also set: age rating, copyright, and category (Puzzle). The App Privacy answers
 must be **Data Not Collected**, which is what `PrivacyInfo.xcprivacy` declares.
 Any other answer contradicts the manifest.
+
+### Two things App Store Connect rejects that the documentation does not warn about
+
+- **The IAP description is capped at 55 characters**, not the length the
+  in-app-purchase page implies.
+- **The IAP review screenshot validator is stricter than the app screenshot
+  spec.** Apple's page says "any of the screenshot specifications your app
+  supports", but a 6.9" capture at 1320x2868 is refused with "the dimensions of
+  one or more screenshots are wrong", even though that is a listed, valid
+  iPhone size. The older iPad sizes are accepted: **2048x2732** works, and
+  1536x2048 is the fallback. Both are pre-generated in
+  `build/screenshots/iap-review/`.
 
 ## 3. Screenshots
 
