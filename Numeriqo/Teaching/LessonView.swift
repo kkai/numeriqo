@@ -40,6 +40,7 @@ struct LessonView: View {
         }
         .navigationTitle(technique?.displayName ?? "How Numeriqo works")
         .navigationBarTitleDisplayMode(.inline)
+        .swipeBackDisabled()
     }
 
     @ViewBuilder

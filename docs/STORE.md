@@ -89,6 +89,15 @@ tinting them, so colour is left to mean something.
 Your best times from earlier versions carry over.
 ```
 
+**What's New, 3.1** (both SKUs use this text):
+
+```
+A swipe from the left edge no longer drops you out of a live puzzle — the
+Back button is now the only way out of a game. The daily puzzle now always
+plays at Steady, its advertised difficulty, instead of occasionally drifting
+a band away.
+```
+
 ---
 
 ## Numeriqo Pro (paid, being removed from sale after this release)

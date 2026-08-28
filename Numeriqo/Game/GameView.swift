@@ -89,6 +89,7 @@ struct GameView: View {
         }
         .navigationTitle(isDaily ? "Today's puzzle" : "\(size)×\(size) · \(difficulty.displayName)")
         .navigationBarTitleDisplayMode(.inline)
+        .swipeBackDisabled()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if let game {
@@ -389,7 +390,7 @@ struct GameView: View {
             let size = Self.dailySize
             let tier = Self.dailyDifficulty
             let generated = await Task.detached(priority: .userInitiated) {
-                PuzzleGenerator.generate(matching: tier, size: size, seed: seed)
+                DailyPuzzle.generate(seed: seed, size: size, difficulty: tier)
             }.value
             guard let generated else { failedToGenerate = true; return }
             let fresh = NumeriqoGame(puzzle: generated.puzzle,
@@ -439,5 +440,21 @@ nonisolated enum DailyPuzzle {
 
     static func seed(day: Int, size: Int, difficulty: Difficulty) -> UInt64 {
         UInt64(bitPattern: Int64(day &* 2_654_435_761 &+ size &* 40_503 &+ difficulty.order &* 97))
+    }
+
+    /// A seed that fails to generate would fail identically for every player
+    /// on that date, bricking that daily worldwide. Salt deterministically per
+    /// round instead: round 0 is the unsalted seed, so every date that
+    /// generates first try keeps the exact board it always had, and a stuck
+    /// date self-heals to the same replacement board for everyone.
+    static func generate(seed: UInt64, size: Int, difficulty: Difficulty) -> PuzzleGenerator.Result? {
+        for round in 0..<8 {
+            if let result = PuzzleGenerator.generate(
+                matching: difficulty, size: size,
+                seed: seed &+ UInt64(round) &* 0x9E37_79B9_7F4A_7C15) {
+                return result
+            }
+        }
+        return nil
     }
 }

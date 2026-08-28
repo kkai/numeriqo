@@ -314,6 +314,13 @@ nonisolated enum PuzzleGenerator {
     ///
     /// Falls back to the nearest band rather than failing: refusing to start a
     /// game because one tier is scarce would be worse than a board one step off.
+    ///
+    /// The budget is sized so the fallback is a genuine edge case. At six
+    /// attempts about 28% of Steady dailies graded off-band; the expected
+    /// number of attempts to hit the band is ~5, so the typical cost is
+    /// unchanged and only the unlucky tail keeps rolling.
+    static let bandAttempts = 48
+
     static func generate(
         matching difficulty: Difficulty,
         size: Int,
@@ -321,7 +328,7 @@ nonisolated enum PuzzleGenerator {
     ) -> Result? {
         var nearest: (result: Result, distance: Int)?
 
-        for attempt in 0..<6 {
+        for attempt in 0..<bandAttempts {
             guard let candidate = generate(
                 size: size, seed: seed &+ UInt64(attempt) &* 7_919
             ) else { continue }

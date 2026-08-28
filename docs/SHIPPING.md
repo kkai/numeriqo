@@ -100,8 +100,8 @@ uploading: no `.storekit` fixture, no `*.debug.dylib` or `__preview.dylib`,
 `PrivacyInfo.xcprivacy` present, `ITSAppUsesNonExemptEncryption` false.
 
 `CURRENT_PROJECT_VERSION` is the build number and must increase for every upload
-against the same `MARKETING_VERSION`. It is currently `1`, correct for the first
-3.0 build.
+against the same `MARKETING_VERSION`. The convention is `<version><two-digit
+counter>`: 3.0 shipped as `3001`, the first 3.1 build is `3101`.
 
 Upload with Transporter or `xcrun altool --upload-app`, which needs an App Store
 Connect API key. That step is yours; nothing here uploads.
@@ -146,8 +146,9 @@ Recorded so they are decisions rather than surprises. None blocks review.
   Motion are.
 - **The parity drill does not force a parity deduction.** Parity is unreachable
   in generated boards, which `TECHNIQUES.md` argues is the correct outcome.
-- **About 28% of daily puzzles grade off the advertised Steady band**, because
-  the generator takes the nearest match after six attempts rather than looping.
-- **A daily whose seed failed to generate would retry the identical seed**, so
-  it would fail identically for everyone on that date. Probed across the next
-  730 days with zero failures, but nothing prevents it.
+- ~~About 28% of daily puzzles grade off the advertised Steady band~~ — fixed
+  in 3.1: `PuzzleGenerator.bandAttempts` raised 6 → 48, guarded by
+  `DailyPuzzleTests`.
+- ~~A daily whose seed failed to generate would retry the identical seed~~ —
+  fixed in 3.1: `DailyPuzzle.generate` salts deterministically per round
+  (round 0 is the unsalted seed, so existing dailies keep their boards).
