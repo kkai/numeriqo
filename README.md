@@ -56,7 +56,7 @@ what ships.
 
 ## Relationship to the shipping app
 
-`../numeriqo/numeriqopro/` is today's Numeriqo. Worth reading; mostly not worth
+`../../archive/numeriqo-legacy/numeriqopro/` is today's Numeriqo. Worth reading; mostly not worth
 porting now that Kakuro is the better template. Its `MathMazeSolver` bitmask
 propagation and uniqueness backtracker are reusable. Its `DifficultyRater` is
 not — it rates by *machine* effort (backtracking guess count), which cannot

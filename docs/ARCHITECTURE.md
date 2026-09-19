@@ -6,7 +6,7 @@ teaching hint engine, practice drills, mastery tracking, one-time unlock. Its
 `docs/ENGINEERING.md` records mistakes that have already been paid for once.
 **Read it before starting.** Deviate only where Calcudoku genuinely differs.
 
-Reference: `/Users/kai/work/areas/ios/kakuro/`
+Reference: `/Users/kai/work/areas/ios/just-puzzles/kakuro/`
 
 ## 1. Project shape
 

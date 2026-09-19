@@ -32,7 +32,7 @@ places the digit unless asked twice.
 
 ## 2. This is Just Kakuro's architecture, applied to a different puzzle
 
-`/Users/kai/work/areas/ios/kakuro/` is already a shipping implementation of this
+`/Users/kai/work/areas/ios/just-puzzles/kakuro/` is already a shipping implementation of this
 exact product shape: human-technique solver, teaching hint engine with escalating
 levels, per-technique practice drills, mastery tracking, one-time unlock. Its
 `docs/ENGINEERING.md` records mistakes already paid for once — a MainActor

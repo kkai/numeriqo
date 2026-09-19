@@ -403,7 +403,7 @@ Unit tests cannot reach view lifecycle, and both of Kakuro's persistence bugs
 survived a green suite. To drive the app:
 
 ```bash
-IDB=/Users/kai/work/areas/ios/kakuro/venv/bin/idb   # fb-idb; idb_companion is on PATH
+IDB=/Users/kai/work/areas/ios/studio/idb-venv/bin/idb   # fb-idb; idb_companion is on PATH
 $IDB connect <udid>
 $IDB ui tap --udid <udid> <x> <y>     # coordinates are POINTS, not pixels
 ```
