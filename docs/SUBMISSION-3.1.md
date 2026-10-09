@@ -1,6 +1,9 @@
 # Numeriqo 3.1: submission runbook
 
-State on 2026-10-09: **ready to submit, both apps, not submitted.** Each 3.1 iOS
+**Submitted for review 2026-10-09 ~20:08 UTC, both apps (`WAITING_FOR_REVIEW`).**
+Next: Release each once approved (manual release).
+
+Earlier the same day: **ready to submit, both apps, not submitted.** Each 3.1 iOS
 version has build 3102 attached and sits in its own draft review submission,
 so App Store Connect has already run its completeness check: version and
 submission are both `READY_FOR_REVIEW`. What is left is pressing Submit, and
@@ -23,7 +26,7 @@ later Release (§1).
 ## 1. What is left
 
 Kai, per app:
-- [ ] **Submit.** App Store Connect → the app → 3.1 → the draft submission →
+- [x] **Submitted** 2026-10-09 by API (`submitted: true` on both drafts). Was: **Submit.** App Store Connect → the app → 3.1 → the draft submission →
   Submit for Review. Or by API:
   `asc.py PATCH reviewSubmissions/<id> '{"data":{"type":"reviewSubmissions","id":"<id>","attributes":{"submitted":true}}}'`
 - [ ] **Release** each once approved (manual release).
