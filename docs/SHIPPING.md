@@ -103,8 +103,9 @@ uploading: no `.storekit` fixture, no `*.debug.dylib` or `__preview.dylib`,
 against the same `MARKETING_VERSION`. The convention is `<version><two-digit
 counter>`: 3.0 shipped as `3001`, the first 3.1 build is `3101`.
 
-Upload with Transporter or `xcrun altool --upload-app`, which needs an App Store
-Connect API key. That step is yours; nothing here uploads.
+Upload with `xcrun altool --upload-app` and the App Store Connect API key
+(`studio/appstoreconnect`). From 3.1 on, uploads and staging are done by API and
+recorded per release (`docs/SUBMISSION-3.1.md`); submitting stays Kai's.
 
 ## 5. Order of operations
 
