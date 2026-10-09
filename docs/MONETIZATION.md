@@ -121,9 +121,9 @@ Why this beats the alternatives:
 ### Store lifecycle for Pro
 
 1. Ship 3.0 to both SKUs **simultaneously**.
-2. Then **remove Numeriqo Pro from sale**. Existing owners keep it, can
-   re-download it, and keep receiving updates; it simply stops taking new
-   customers.
+2. ~~Then remove Numeriqo Pro from sale.~~ **Superseded at submission
+   (`6213419`, 2026-08-07): Pro stays on sale, repriced from $2.99 to $4.99.**
+   Owners and new buyers get the same build; both SKUs ship every release.
 3. Keep shipping Pro builds indefinitely. The marginal cost is one extra archive
    per release.
 

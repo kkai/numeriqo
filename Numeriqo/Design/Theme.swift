@@ -81,15 +81,21 @@ nonisolated enum Theme {
     /// Secondary text still reads as secondary at this weight, and now clears
     /// the threshold on every surface the app uses.
     static let inkSecondary = dynamic(light: ThemeRGBA(0.102, 0.102, 0.118, 0.78),
-                                      dark: ThemeRGBA(0.949, 0.941, 0.925, 0.76))
+                                      dark: ThemeRGBA(0.949, 0.941, 0.925, 0.76),
+                                      highLight: ThemeRGBA(0.102, 0.102, 0.118, 0.92),
+                                      highDark: ThemeRGBA(0.949, 0.941, 0.925, 0.92))
     /// Cell boundaries *inside* a cage. Drawn dotted, and only between cells of
     /// the same cage — so line style itself encodes cage membership and the
     /// board needs no second boundary to explain itself.
     static let cellRule = dynamic(light: ThemeRGBA(0.102, 0.102, 0.118, 0.22),
-                                  dark: ThemeRGBA(0.949, 0.941, 0.925, 0.26))
+                                  dark: ThemeRGBA(0.949, 0.941, 0.925, 0.26),
+                                  highLight: ThemeRGBA(0.102, 0.102, 0.118, 0.45),
+                                  highDark: ThemeRGBA(0.949, 0.941, 0.925, 0.50))
     /// The cage boundary. Solid, and the heaviest line on the board.
     static let cageRule = dynamic(light: ThemeRGBA(0.102, 0.102, 0.118, 0.82),
-                                  dark: ThemeRGBA(0.949, 0.941, 0.925, 0.80))
+                                  dark: ThemeRGBA(0.949, 0.941, 0.925, 0.80),
+                                  highLight: ThemeRGBA(0.102, 0.102, 0.118, 1.0),
+                                  highDark: ThemeRGBA(0.949, 0.941, 0.925, 1.0))
 
     // MARK: - Meaning
 
@@ -99,7 +105,9 @@ nonisolated enum Theme {
     /// Desaturated rust, never a pure red — this marks a wrong digit, not a
     /// disaster.
     static let error = dynamic(light: ThemeRGBA(0.706, 0.275, 0.184),
-                               dark: ThemeRGBA(0.878, 0.443, 0.310))
+                               dark: ThemeRGBA(0.878, 0.443, 0.310),
+                               highLight: ThemeRGBA(0.558, 0.217, 0.145),
+                               highDark: ThemeRGBA(0.908, 0.582, 0.483))
     // There is no `success` token. Success is the accent, because a second
     // green spent on something the accent already says is a hue the palette
     // does not need. One existed, duplicated `accent` exactly, and had zero
@@ -118,16 +126,29 @@ nonisolated enum Theme {
     /// legible before a word is read.
     static func tierAccent(_ difficulty: Difficulty) -> Color {
         switch difficulty {
+        // The high-contrast variants are the same hues pushed to at least 7:1
+        // against both `paper` and `surface` (darkened in light, lightened in
+        // dark). At standard contrast the light accents run 3.0–6.2:1.
         case .gentle: dynamic(light: ThemeRGBA(0.243, 0.486, 0.694),
-                              dark: ThemeRGBA(0.400, 0.635, 0.827))
+                              dark: ThemeRGBA(0.400, 0.635, 0.827),
+                              highLight: ThemeRGBA(0.170, 0.340, 0.486),
+                              highDark: ThemeRGBA(0.484, 0.686, 0.851))
         case .steady: dynamic(light: ThemeRGBA(0.306, 0.541, 0.435),
-                              dark: ThemeRGBA(0.463, 0.702, 0.588))
+                              dark: ThemeRGBA(0.463, 0.702, 0.588),
+                              highLight: ThemeRGBA(0.202, 0.357, 0.287),
+                              highDark: ThemeRGBA(0.479, 0.711, 0.600))
         case .sharp: dynamic(light: ThemeRGBA(0.722, 0.525, 0.231),
-                             dark: ThemeRGBA(0.851, 0.671, 0.373))
+                             dark: ThemeRGBA(0.851, 0.671, 0.373),
+                             highLight: ThemeRGBA(0.419, 0.304, 0.134),
+                             highDark: ThemeRGBA(0.880, 0.720, 0.460))
         case .deep: dynamic(light: ThemeRGBA(0.659, 0.329, 0.220),
-                            dark: ThemeRGBA(0.812, 0.482, 0.361))
+                            dark: ThemeRGBA(0.812, 0.482, 0.361),
+                            highLight: ThemeRGBA(0.514, 0.257, 0.172),
+                            highDark: ThemeRGBA(0.857, 0.606, 0.514))
         case .severe: dynamic(light: ThemeRGBA(0.486, 0.294, 0.490),
-                              dark: ThemeRGBA(0.647, 0.451, 0.651))
+                              dark: ThemeRGBA(0.647, 0.451, 0.651),
+                              highLight: ThemeRGBA(0.442, 0.268, 0.446),
+                              highDark: ThemeRGBA(0.756, 0.621, 0.759))
         }
     }
 
@@ -205,7 +226,9 @@ nonisolated enum Theme {
     /// The ink a clue is set in. Quieter than a placed digit, because it is
     /// given rather than earned.
     static let clueInk = dynamic(light: ThemeRGBA(0.102, 0.102, 0.118, 0.62),
-                                 dark: ThemeRGBA(0.949, 0.941, 0.925, 0.60))
+                                 dark: ThemeRGBA(0.949, 0.941, 0.925, 0.60),
+                                 highLight: ThemeRGBA(0.102, 0.102, 0.118, 0.88),
+                                 highDark: ThemeRGBA(0.949, 0.941, 0.925, 0.88))
 
     // MARK: Chrome
 
@@ -231,13 +254,26 @@ nonisolated enum Theme {
     /// executor-assertion prologue, so losing one does not silently bring the
     /// trap back. `dynamicProvider:` is spelled out rather than used as a
     /// trailing closure so the dangerous API stays greppable.
-    private static func dynamic(light: ThemeRGBA, dark: ThemeRGBA) -> Color {
+    ///
+    /// `highLight`/`highDark` are the Increase Contrast variants. Tokens that
+    /// already sit at full strength (paper, surface, ink) pass none and keep
+    /// their standard values; the ones that recede on purpose (secondary ink,
+    /// clues, rules, accents, error) give them up when the player asks.
+    private static func dynamic(light: ThemeRGBA, dark: ThemeRGBA,
+                                highLight: ThemeRGBA? = nil,
+                                highDark: ThemeRGBA? = nil) -> Color {
         #if canImport(UIKit)
-        Color(UIColor(dynamicProvider: { @Sendable trait in
-            UIColor(trait.userInterfaceStyle == .dark ? dark : light)
+        let highLight = highLight ?? light
+        let highDark = highDark ?? dark
+        return Color(UIColor(dynamicProvider: { @Sendable trait in
+            let isDark = trait.userInterfaceStyle == .dark
+            if trait.accessibilityContrast == .high {
+                return UIColor(isDark ? highDark : highLight)
+            }
+            return UIColor(isDark ? dark : light)
         }))
         #else
-        Color(red: light.red, green: light.green, blue: light.blue).opacity(light.alpha)
+        return Color(red: light.red, green: light.green, blue: light.blue).opacity(light.alpha)
         #endif
     }
 }

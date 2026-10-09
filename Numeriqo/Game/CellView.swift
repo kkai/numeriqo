@@ -14,8 +14,12 @@ struct CellView: View {
     /// Candidates the current hint rules out here. Struck through in place, so
     /// the player sees *which* possibilities the argument removed.
     var eliminated: Set<Int> = []
+    /// Set on the play screen only. Lessons and the tutorial leave it nil, so
+    /// their scripted boards offer no actions that would bypass the script.
+    var onAssistiveEdit: ((Cell, CellEdit) -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var entryScale: CGFloat = 1
 
     private var entry: Int? { game.board.entries[cell] }
@@ -57,10 +61,37 @@ struct CellView: View {
             entryScale = 1.15
             withAnimation(Motion.digitEntry) { entryScale = 1 }
         }
+        // Label is the position, value the contents and cage. Split so that
+        // VoiceOver re-reads only the value when a digit changes, and so the
+        // label stays a stable "Row r, column c" that UI tests can find.
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(BoardSpeech.position(cell).capitalizedFirst)
+        .accessibilityValue(BoardSpeech.cellValue(game, at: cell))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .accessibilityActions { cageActions }
+        .accessibilityActions {
+            editActions
+            cageActions
+        }
+    }
+
+    /// Entering a digit without the pad.
+    ///
+    /// Without these a VoiceOver player has to select the cell, swipe down to
+    /// the pad, find the digit and swipe back up for every single entry. The
+    /// actions run through the same calls as the pad, so undo, notes clean-up,
+    /// the error check and haptics behave identically.
+    @ViewBuilder
+    private var editActions: some View {
+        if let onAssistiveEdit, game.phase == .playing {
+            ForEach(1...game.puzzle.size, id: \.self) { digit in
+                Button(game.notesMode ? "Note \(digit)" : "Enter \(digit)") {
+                    onAssistiveEdit(cell, .digit(digit))
+                }
+            }
+            if entry != nil || !game.board.notes(at: cell).isEmpty {
+                Button("Clear") { onAssistiveEdit(cell, .clear) }
+            }
+        }
     }
 
     /// Moving between cells of the same cage.
@@ -109,7 +140,8 @@ struct CellView: View {
     @ViewBuilder
     private var selectionBorder: some View {
         if isSelected {
-            Rectangle().strokeBorder(Theme.tierAccent(game.difficulty), lineWidth: 2)
+            Rectangle().strokeBorder(Theme.tierAccent(game.difficulty),
+                                     lineWidth: contrast == .increased ? 3 : 2)
         }
     }
 
@@ -130,38 +162,6 @@ struct CellView: View {
             Color.clear
         }
     }
-
-    /// Cage membership is exactly what the visual outline encodes and speech
-    /// cannot, so it has to be spoken explicitly.
-    private var accessibilityLabel: String {
-        var parts = ["Row \(cell.row + 1), column \(cell.col + 1)"]
-
-        if let entry {
-            parts.append("\(entry)")
-            if isWrong { parts.append("incorrect") }
-        } else {
-            let notes = game.board.notes(at: cell).sorted()
-            parts.append(notes.isEmpty ? "empty" : "notes \(notes.map(String.init).joined(separator: ", "))")
-        }
-
-        if let cage = game.puzzle.cage(containing: cell) {
-            let operation = cage.isFreebie ? "free cell" : spoken(cage.operation)
-            parts.append(cage.isFreebie
-                ? "\(operation) \(cage.target)"
-                : "cage \(cage.target) \(operation), \(cage.cells.count) cells")
-        }
-        return parts.joined(separator: ", ")
-    }
-
-    private func spoken(_ operation: Operation) -> String {
-        switch operation {
-        case .none: "free"
-        case .add: "plus"
-        case .subtract: "minus"
-        case .multiply: "times"
-        case .divide: "divided by"
-        }
-    }
 }
 
 // MARK: - Notes
@@ -174,6 +174,9 @@ struct CellView: View {
 struct NotesView: View {
     let notes: Set<Int>
     var eliminated: Set<Int> = []
+    /// Set on the play screen only. Lessons and the tutorial leave it nil, so
+    /// their scripted boards offer no actions that would bypass the script.
+    var onAssistiveEdit: ((Cell, CellEdit) -> Void)? = nil
     let size: Int
     let geometry: BoardGeometry
     /// `Theme.accent`, never `.accentColor`. Always overridden at the one call

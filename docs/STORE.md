@@ -92,15 +92,22 @@ Your best times from earlier versions carry over.
 **What's New, 3.1** (both SKUs use this text):
 
 ```
-A swipe from the left edge no longer drops you out of a live puzzle — the
-Back button is now the only way out of a game. The daily puzzle now always
-plays at Steady, its advertised difficulty, instead of occasionally drifting
-a band away.
+Playing with VoiceOver is much quicker. Every cell now has actions to enter or
+note each digit and to clear it, so there is no more going back and forth to
+the number pad, and the game tells you what you placed and when a cage, row or
+column is complete.
+
+With Increase Contrast turned on, clues, pencil marks, cage lines and the
+accent colours all get stronger.
+
+A swipe from the left edge no longer drops you out of a live puzzle; the Back
+button is the only way out of a game. The daily puzzle now always plays at
+Steady, its advertised difficulty.
 ```
 
 ---
 
-## Numeriqo Pro (paid, being removed from sale after this release)
+## Numeriqo Pro (paid, $4.99; stays on sale, see `MONETIZATION.md` §3)
 
 Same build, permanently unlocked. Subtitle and keywords as above.
 

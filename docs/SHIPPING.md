@@ -131,9 +131,9 @@ the exact thing the `NUMERIQO_PRO` flag exists to prevent.
       the app's own strings; metadata is manual.
 - [ ] Clearance search done. `RULES.md` §6 asks for counsel confirming
       *Calcudoku* and *MathDoku* are unregistered in Class 9. **Not done.**
-- [ ] **The LIVE 2.x listings still carry `kenken` in the keyword field** on
-      both apps. 3.0's keywords are clean, but 2.x stays published until 3.0 is
-      approved. Keywords are editable on a live version without a new build.
+- [x] ~~The LIVE 2.x listings still carry `kenken` in the keyword field~~.
+      Moot since 3.0 went live: read back 2026-10-09, neither app's keywords
+      contain "kenken" or "kendoku".
 - [ ] Both apps tested on a real device from a Release build
 
 ## 7. Known gaps, shipping anyway
@@ -142,8 +142,11 @@ Recorded so they are decisions rather than surprises. None blocks review.
 
 - **Sound is not implemented.** `DESIGN.md` §6 specifies it; it is not built
   because it cannot be evaluated here.
-- **Increase Contrast is not implemented.** Light/dark, Dynamic Type and Reduce
-  Motion are.
+- ~~**Increase Contrast is not implemented.**~~ Implemented in 3.1: every token
+  that recedes on purpose has a high-contrast variant at 7:1 or better, and the
+  board's lines thicken (`ContrastTests`, `docs/ACCESSIBILITY.md`).
+- **Sound** (above) stays deferred past 3.1 until it can be auditioned on a
+  device. When it comes it is **off by default**, behind a Settings toggle.
 - **The parity drill does not force a parity deduction.** Parity is unreachable
   in generated boards, which `TECHNIQUES.md` argues is the correct outcome.
 - ~~About 28% of daily puzzles grade off the advertised Steady band~~ — fixed

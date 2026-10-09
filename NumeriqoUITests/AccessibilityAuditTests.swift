@@ -109,6 +109,31 @@ class AccessibilityAuditTests: XCTestCase {
         try app.performAccessibilityAudit()
     }
 
+    /// A cell is a position (label) holding contents and a cage (value), so
+    /// VoiceOver re-reads only what changed. 3.1 split the two.
+    func testBoardCellsSpeakPositionThenContents() throws {
+        enterAGame()
+        let cell = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Row 1, column 1")).firstMatch
+        XCTAssertTrue(cell.waitForExistence(timeout: 10))
+        let value = cell.value as? String ?? ""
+        XCTAssertTrue(value.contains("cage ") || value.contains("free cell "),
+                      "the value names the cage: \(value)")
+    }
+
+    /// Home at the largest accessibility text size. Everything off the board
+    /// uses semantic text styles, so this should pass without filters.
+    func testHomeAtLargestTextSize() throws {
+        app.terminate()
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName",
+                                "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Show me how"].waitForExistence(timeout: 10))
+        try app.performAccessibilityAudit { issue in
+            ignoreSystemChromeContrastWarning(issue)
+        }
+    }
+
     func testHintBanner() throws {
         enterAGame()
         app.buttons["Hint"].firstMatch.tap()

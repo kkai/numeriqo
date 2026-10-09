@@ -181,6 +181,16 @@ final class NumeriqoGame {
         Haptics.note()
     }
 
+    /// Removes every pencil mark from a cell, as one undoable move. The pad's
+    /// Erase only clears digits; this is for the cell's "Clear" action.
+    func clearNotes(at cell: Cell) {
+        guard phase == .playing, board.entries[cell] == nil else { return }
+        let old = board.notes(at: cell)
+        guard !old.isEmpty else { return }
+        perform([.setNotes(cell, old: old, new: [])])
+        Haptics.note()
+    }
+
     func toggleNote(_ digit: Int, at cell: Cell) {
         guard phase == .playing, board.entries[cell] == nil else { return }
         let old = board.notes(at: cell)

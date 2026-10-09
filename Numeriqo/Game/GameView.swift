@@ -141,7 +141,11 @@ struct GameView: View {
             let cell = min((available / CGFloat(game.puzzle.size)).rounded(.down), 72)
             let side = cell * CGFloat(game.puzzle.size)
 
-            let board = BoardView(game: game, step: hint?.showsArgument == true ? hint?.step : nil)
+            let board = BoardView(
+                game: game,
+                step: hint?.showsArgument == true ? hint?.step : nil,
+                onAssistiveEdit: { cell, edit in assistiveEdit(cell, edit, in: game) }
+            )
                 .frame(width: side, height: side)
 
             if sideBySide {
@@ -185,6 +189,13 @@ struct GameView: View {
         }
         .onChange(of: game.board) { old, new in
             creditMastery(old: old, new: new, game: game)
+            // Placements, clears and completed cages or lines, spoken. A no-op
+            // without VoiceOver. Skipped on the winning move, which the win
+            // announcement below covers.
+            if game.phase == .playing,
+               let spoken = BoardSpeech.boardChanged(old: old, new: new, puzzle: game.puzzle) {
+                BoardSpeech.announce(spoken)
+            }
             // Any board change invalidates the argument on screen.
             hint = nil
             persist()
@@ -204,8 +215,8 @@ struct GameView: View {
         // VoiceOver has no way to notice a banner appearing at the bottom of
         // the screen, so say it.
         .onChange(of: hint?.text) { _, text in
-            guard let text else { return }
-            AccessibilityNotification.Announcement(text).post()
+            guard text != nil, let hint else { return }
+            BoardSpeech.announce(BoardSpeech.spokenHint(hint))
         }
     }
 
@@ -269,6 +280,31 @@ struct GameView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(winMessage)
+    }
+
+    /// A cell's accessibility action. Digits go through the same calls as the
+    /// pad; entries are announced by the board-change handler, notes here.
+    private func assistiveEdit(_ cell: Cell, _ edit: CellEdit, in game: NumeriqoGame) {
+        guard game.phase == .playing else { return }
+        switch edit {
+        case .digit(let digit) where game.notesMode:
+            guard game.board.entries[cell] == nil else {
+                BoardSpeech.announce("This cell holds a digit. Clear it before adding notes.")
+                return
+            }
+            let had = game.board.notes(at: cell).contains(digit)
+            game.toggleNote(digit, at: cell)
+            BoardSpeech.announce(had ? "Note \(digit) removed" : "Note \(digit) added")
+        case .digit(let digit):
+            game.place(digit, at: cell)
+        case .clear:
+            if game.board.entries[cell] != nil {
+                game.clear(at: cell)
+            } else {
+                game.clearNotes(at: cell)
+                BoardSpeech.announce("Notes cleared")
+            }
+        }
     }
 
     private var winMessage: String {

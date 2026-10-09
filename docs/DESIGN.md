@@ -241,6 +241,11 @@ Details:
 > it cannot be judged: the simulator's audio is not audible to whoever writes
 > this code, and audio nobody has heard is not something to ship. Haptics, which
 > can be reasoned about from the vocabulary alone, are implemented in full.
+>
+> **Decided 2026-10-09:** when sound ships it is off by default, a Settings
+> toggle the player opts into, and it plays through the ambient session so the
+> silent switch always wins. It ships only after it has been auditioned on a
+> device; 3.1 went out without it for that reason.
 
 
 Per `design/game-feel`: feedback must scale with rarity, and exactly one layer

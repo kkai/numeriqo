@@ -25,9 +25,17 @@ struct BoardView: View {
     /// technique, and a fake one would name a deduction that isn't happening.
     var highlight: [Cell] = []
     var onTap: ((Cell) -> Void)?
+    /// A cell's accessibility actions ("Enter 3", "Clear"). Nil in lessons and
+    /// the tutorial, which then offer none — see `CellView.onAssistiveEdit`.
+    var onAssistiveEdit: ((Cell, CellEdit) -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Increase Contrast. Colours follow it through `Theme`; line widths are
+    /// not colours, so the board reads it here and thickens its rules.
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var appeared = false
+
+    private var isHighContrast: Bool { contrast == .increased }
 
     /// Digits the current hint rules out, per cell.
     private var eliminatedByCell: [Cell: Set<Int>] {
@@ -122,7 +130,7 @@ struct BoardView: View {
         }
         .stroke(
             Theme.cellRule,
-            style: StrokeStyle(lineWidth: 1, dash: [2, 3])
+            style: StrokeStyle(lineWidth: isHighContrast ? 1.5 : 1, dash: [2, 3])
         )
     }
 
@@ -153,7 +161,8 @@ struct BoardView: View {
 
         CellView(
             game: game, cell: cell, geometry: geo,
-            argumentIndex: argumentIndex, eliminated: eliminated
+            argumentIndex: argumentIndex, eliminated: eliminated,
+            onAssistiveEdit: onAssistiveEdit
         )
             .frame(width: geo.cellSize, height: geo.cellSize)
             .opacity(shown ? 1 : 0)
@@ -173,7 +182,7 @@ struct BoardView: View {
             CageOutline(cells: cage.cells, geometry: geo, inset: 0, cornerRadius: 0)
                 .stroke(
                     satisfied ? Theme.tierAccent(game.difficulty) : Theme.cageRule,
-                    style: StrokeStyle(lineWidth: 2, lineJoin: .miter)
+                    style: StrokeStyle(lineWidth: isHighContrast ? 3 : 2, lineJoin: .miter)
                 )
                 .animation(reduceMotion ? nil : Motion.cageSatisfied, value: satisfied)
         }
