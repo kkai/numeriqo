@@ -1,8 +1,13 @@
 # Numeriqo 3.1.1: submission runbook
 
-**Built and tested locally 2026-10-21 on branch `release-3.1.1`. Not merged,
-not pushed, nothing in App Store Connect.** 3.1 (3102) went live on both SKUs
-on 2026-10-21.
+**Staged 2026-10-21, both apps: 3.1.1 versions created, build 3111 attached,
+not submitted.** Merged into `main` and pushed (`b63085c`). 3.1 (3102) went
+live on both SKUs on 2026-10-21.
+
+| App | 3.1.1 version id | Build 3111 id (= delivery id) |
+|---|---|---|
+| Numeriqo (6749287069, en-US) | `ed769351-990d-4223-8399-72dddc1cb9da` | `17fbfc0e-a5e9-4afe-9359-8cb7963f1a31` |
+| Numeriqo Pro (6751394841, en-GB) | `80272489-d771-4a42-af25-564a4aed64c5` | `255d26a9-dda8-424d-911f-2a6302f37f11` |
 
 A bug-fix release for the daily, both SKUs, iOS only. Version 3.1.1, build 3111.
 
@@ -40,10 +45,16 @@ and reads `progress.daily` directly, so it is unaffected until that line moves.
 
 ## What is left
 
-- [ ] Kai: say go to merge `release-3.1.1` into `main` and push.
-- [ ] Create the 3.1.1 iOS version on both apps (MANUAL release, copyright
-  "Kai Kunze"), What's New from `STORE.md` (3.1.1 block).
-- [ ] Archive, inspect and upload build 3111 for both SKUs, attach, submit.
-- [ ] Screenshots, description, keywords: unchanged, carry over.
+- [x] Merged into `main` and pushed.
+- [x] 3.1.1 iOS versions created (MANUAL, copyright "Kai Kunze"). What's New
+  from `STORE.md` (3.1.1 block) and read back. Review notes now open with a
+  "New in 3.1.1" paragraph in place of the 3.1 one.
+- [x] Build 3111, both SKUs: `.ipa` inspected (bundle ids, 3.1.1/3111,
+  `ITSAppUsesNonExemptEncryption` false, no `.storekit`, debug or preview
+  dylibs, privacy manifest present, no `-uiTestResetState`/kenken/kendoku in
+  the binary), `--validate-app` clean, uploaded, `VALID`, attached.
+- [x] Description, keywords and screenshots (5 iPhone + 5 iPad) carried over.
+- [ ] Kai: submit each for review (web, or the reviewSubmissions API flow),
+  then Release once approved.
 - [ ] Device check: leave a game unfinished, open the daily, back out,
   Continue still there; finish a daily after midnight.
