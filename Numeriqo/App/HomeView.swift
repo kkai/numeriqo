@@ -24,12 +24,17 @@ struct HomeView: View {
     @State private var size = 5
     @State private var difficulty: Difficulty = .steady
     @State private var pendingGame: PendingGame?
+    /// Today's day number. Held as state and refreshed on a significant time
+    /// change (midnight included), so Home left open overnight offers the new
+    /// day's puzzle instead of yesterday's "solved".
+    @State private var today = DailyPuzzle.today
 
     /// Nothing solved and nothing learned. Lead with the rules rather than the
     /// pickers — they are meaningless before you know what a cage is.
     private var isFirstRun: Bool {
         progress.stats.puzzlesSolved == 0
             && progress.savedGame == nil
+            && progress.savedDaily == nil
             && mastery.records.values.allSatisfy { !$0.lessonCompleted && $0.unaidedUses == 0 }
     }
 
@@ -53,7 +58,12 @@ struct HomeView: View {
                 .padding(.bottom, Layout.Space.section)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIApplication.significantTimeChangeNotification)) { _ in
+            today = DailyPuzzle.today
+        }
         .onAppear {
+            today = DailyPuzzle.today
             if let last = progress.lastPlayed {
                 size = last.size
                 difficulty = last.difficulty
@@ -237,9 +247,9 @@ struct HomeView: View {
     // MARK: - Daily
 
     private var dailyCard: some View {
-        let day = DailyPuzzle.today
+        let day = today
         let done = progress.hasCompletedDaily(day: day)
-        let streak = progress.daily.currentStreak
+        let streak = progress.displayStreak(today: day)
 
         return Button {
             if !done { path.append(.daily(day: day)) }

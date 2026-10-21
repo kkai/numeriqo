@@ -19,6 +19,7 @@ final class ProgressStore {
     private enum Key {
         static let bestTimes = "numeriqo.bestTimes.v1"
         static let saveGame = "numeriqo.saveGame.v1"
+        static let saveDaily = "numeriqo.saveDaily.v1"
         static let stats = "numeriqo.stats.v1"
         static let mastery = "numeriqo.mastery.v1"
         static let settings = "numeriqo.settings.v1"
@@ -93,6 +94,14 @@ final class ProgressStore {
     /// invalidates, so a Continue card would not appear until relaunch.
     private(set) var savedGame: GameSnapshot?
 
+    /// A daily in progress, in its own slot.
+    ///
+    /// Through 3.1 the daily shared the one slot, so opening today's puzzle
+    /// and backing out silently replaced a half-finished 9×9, and a daily left
+    /// overnight came back under Continue and was credited to the day it was
+    /// finished on.
+    private(set) var savedDaily: GameSnapshot?
+
     var settings = Settings() {
         didSet { save(settings, key: Key.settings) }
     }
@@ -104,6 +113,7 @@ final class ProgressStore {
         settings = load(Settings.self, key: Key.settings) ?? Settings()
         daily = load(DailyRecord.self, key: Key.daily) ?? DailyRecord()
         savedGame = load(GameSnapshot.self, key: Key.saveGame)
+        savedDaily = load(GameSnapshot.self, key: Key.saveDaily)
         lastPlayed = load(GameChoice.self, key: Key.lastPlayed)
         migrateLegacyBestTimes()
     }
@@ -208,12 +218,14 @@ final class ProgressStore {
 
     // MARK: - Dailies
 
-    /// Records today's daily as solved and updates the streak.
+    /// Records a daily as solved and updates the streak.
     ///
     /// A missed day resets the count but keeps the best — the streak dims, it
-    /// does not shame.
+    /// does not shame. `lastCompletedDay` only moves forward: a daily finished
+    /// after a newer one (started before midnight, or a clock moved back)
+    /// changes nothing rather than resetting the streak to 1.
     func recordDailyCompleted(day: Int) {
-        guard day != daily.lastCompletedDay else { return }
+        guard day > daily.lastCompletedDay else { return }
         daily.currentStreak = (day == daily.lastCompletedDay + 1) ? daily.currentStreak + 1 : 1
         daily.bestStreak = max(daily.bestStreak, daily.currentStreak)
         daily.lastCompletedDay = day
@@ -222,16 +234,41 @@ final class ProgressStore {
 
     func hasCompletedDaily(day: Int) -> Bool { daily.lastCompletedDay == day }
 
+    /// The streak as it stands today. The stored count only changes on a
+    /// solve, so after a missed day it still read "5 days in a row" until the
+    /// next daily reset it to 1.
+    func displayStreak(today: Int) -> Int {
+        let last = daily.lastCompletedDay
+        return last == today || last == today - 1 ? daily.currentStreak : 0
+    }
+
     // MARK: - Saved game
 
+    /// Saves into the slot the game belongs to: a dated daily has its own.
     func saveGame(_ snapshot: GameSnapshot) {
-        savedGame = snapshot
-        save(snapshot, key: Key.saveGame)
+        if snapshot.dailyDay != nil {
+            savedDaily = snapshot
+            save(snapshot, key: Key.saveDaily)
+        } else {
+            savedGame = snapshot
+            save(snapshot, key: Key.saveGame)
+        }
     }
 
     func clearSavedGame() {
         savedGame = nil
         defaults.removeObject(forKey: Key.saveGame)
+    }
+
+    func clearSavedDaily() {
+        savedDaily = nil
+        defaults.removeObject(forKey: Key.saveDaily)
+    }
+
+    /// The saved daily, if it is that day's. Any other day's is stale: Home
+    /// only ever offers today's, so it is replaced when today's is opened.
+    func savedDaily(for day: Int) -> GameSnapshot? {
+        savedDaily?.dailyDay == day ? savedDaily : nil
     }
 
     // MARK: - Mastery
@@ -263,4 +300,7 @@ nonisolated struct GameSnapshot: Codable, Sendable, Equatable {
     let elapsed: TimeInterval
     /// Optional so saves written before this field existed still decode.
     var isDaily: Bool?
+    /// Which day's daily this is. Added in 3.1.1; a 3.1 daily save has
+    /// `isDaily` but no day (see `GameView.load`).
+    var dailyDay: Int? = nil
 }

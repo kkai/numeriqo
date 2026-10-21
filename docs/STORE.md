@@ -89,6 +89,24 @@ tinting them, so colour is left to mean something.
 Your best times from earlier versions carry over.
 ```
 
+**What's New, 3.1.1** (both SKUs use this text):
+
+```
+Fixes for the daily puzzle and its streak.
+
+Opening today's puzzle no longer replaces the game you had going. The daily
+keeps its own place, and when you finish it you can go straight back to your
+game.
+
+A daily you started before midnight now counts for its own day, and a daily
+left unfinished from an earlier day no longer marks today's as solved.
+
+Home and Statistics show your streak as it stands today, and Home moves on to
+the new day's puzzle after midnight.
+
+After a win, New puzzle and Play another now always start a new board.
+```
+
 **What's New, 3.1** (both SKUs use this text):
 
 ```

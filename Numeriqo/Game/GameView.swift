@@ -16,18 +16,21 @@ struct GameView: View {
     static let dailySize = 6
     static let dailyDifficulty: Difficulty = .steady
 
-    private let source: Source
+    /// State, not a constant: the win banner's next game replaces it. With a
+    /// fixed source, "New puzzle" after a resumed game reloaded the old save,
+    /// and "Play another" after the daily regenerated the same daily.
+    @State private var source: Source
 
     init(size: Int, difficulty: Difficulty) {
-        source = .fresh(size: size, difficulty: difficulty)
+        _source = State(initialValue: .fresh(size: size, difficulty: difficulty))
     }
 
     init(resuming snapshot: GameSnapshot) {
-        source = .resume(snapshot)
+        _source = State(initialValue: .resume(snapshot))
     }
 
     init(daily day: Int) {
-        source = .daily(day: day)
+        _source = State(initialValue: .daily(day: day))
     }
 
     @Environment(ProgressStore.self) private var progress
@@ -62,7 +65,10 @@ struct GameView: View {
         }
     }
 
+    /// From the game once it exists, so a daily resumed from a 3.1 save
+    /// still reads as the daily.
     private var isDaily: Bool {
+        if let game { return game.isDaily }
         if case .daily = source { return true }
         return false
     }
@@ -202,14 +208,16 @@ struct GameView: View {
         }
         .onChange(of: game.phase) { _, phase in
             guard phase == .won else { return }
-            progress.clearSavedGame()
+            if game.isDaily { progress.clearSavedDaily() } else { progress.clearSavedGame() }
             // Taken from recordSolve rather than re-derived against a store
             // that has already been updated: on an exact tie that comparison
             // claims a record which was never written.
             newBestTime = progress.recordSolve(
                 size: game.puzzle.size, difficulty: game.difficulty, time: game.elapsed
             )
-            if game.isDaily { progress.recordDailyCompleted(day: DailyPuzzle.today) }
+            // The game's own day, not today: a daily started before midnight
+            // counts for the day it was.
+            if let day = game.dailyDay { progress.recordDailyCompleted(day: day) }
             AccessibilityNotification.Announcement(winMessage).post()
         }
         // VoiceOver has no way to notice a banner appearing at the bottom of
@@ -265,9 +273,13 @@ struct GameView: View {
             // the best moment in the app, on the screen whose whole job is
             // making you come back tomorrow.
             HStack(spacing: Layout.Space.snug) {
-                if case .daily = source {
-                    Button("Play another") { startAnother() }
-                        .buttonStyle(.secondary)
+                if isDaily {
+                    // Back to the game the daily set aside, if there is one,
+                    // rather than starting a new one over it.
+                    Button(progress.savedGame != nil ? "Continue your game" : "Play another") {
+                        startAnother()
+                    }
+                    .buttonStyle(.secondary)
                 } else {
                     Button("New puzzle") { startAnother() }
                         .buttonStyle(.primary(tint: Theme.tierAccent(difficulty)))
@@ -309,11 +321,17 @@ struct GameView: View {
 
     private var winMessage: String {
         let time = Self.spokenClock(game?.elapsed ?? 0)
-        if case .daily = source { return "Today's puzzle, solved in \(time)." }
+        if isDaily { return "Today's puzzle, solved in \(time)." }
         return newBestTime ? "Solved in \(time). Your best yet." : "Solved in \(time)."
     }
 
     private func startAnother() {
+        if isDaily {
+            source = progress.savedGame.map { .resume($0) }
+                ?? .fresh(size: Self.dailySize, difficulty: Self.dailyDifficulty)
+        } else {
+            source = .fresh(size: size, difficulty: difficulty)
+        }
         hint = nil
         newBestTime = false
         game = nil
@@ -401,7 +419,20 @@ struct GameView: View {
         guard game == nil else { return }
 
         switch source {
-        case .resume(let snapshot):
+        case .resume(var snapshot):
+            if snapshot.isDaily == true, snapshot.dailyDay == nil {
+                // A 3.1 daily save has no day. Credit it to today only if it is
+                // today's board; an older one plays on as an ordinary 6×6. Moved
+                // to the daily slot so Continue is free for other games again.
+                let today = DailyPuzzle.today
+                if let todays = await Self.dailyPuzzle(day: today), todays == snapshot.puzzle {
+                    snapshot.dailyDay = today
+                    progress.clearSavedGame()
+                    progress.saveGame(snapshot)
+                } else {
+                    snapshot.isDaily = nil
+                }
+            }
             let resumed = NumeriqoGame(snapshot: snapshot)
             resumed.cellFirstInput = progress.settings.cellFirstInput
             game = resumed
@@ -419,24 +450,34 @@ struct GameView: View {
             game = fresh
 
         case .daily(let day):
-            // Seeded from the date, so every player gets the same board and a
-            // streak means something.
-            let seed = DailyPuzzle.seed(day: day, size: Self.dailySize,
-                                        difficulty: Self.dailyDifficulty)
-            let size = Self.dailySize
-            let tier = Self.dailyDifficulty
-            let generated = await Task.detached(priority: .userInitiated) {
-                DailyPuzzle.generate(seed: seed, size: size, difficulty: tier)
-            }.value
-            guard let generated else { failedToGenerate = true; return }
-            let fresh = NumeriqoGame(puzzle: generated.puzzle,
-                                     difficulty: Self.dailyDifficulty, isDaily: true)
+            if let saved = progress.savedDaily(for: day) {
+                let resumed = NumeriqoGame(snapshot: saved)
+                resumed.cellFirstInput = progress.settings.cellFirstInput
+                game = resumed
+                break
+            }
+            guard let puzzle = await Self.dailyPuzzle(day: day) else {
+                failedToGenerate = true; return
+            }
+            let fresh = NumeriqoGame(puzzle: puzzle, difficulty: Self.dailyDifficulty,
+                                     dailyDay: day)
             fresh.cellFirstInput = progress.settings.cellFirstInput
             if progress.settings.autoNotes { fresh.fillAutoNotes() }
             game = fresh
         }
 
         if let game { Self.solveForUITestsIfAsked(game) }
+    }
+
+    /// A day's daily board. Seeded from the date, so every player gets the
+    /// same board and a streak means something.
+    static func dailyPuzzle(day: Int) async -> Puzzle? {
+        let seed = DailyPuzzle.seed(day: day, size: dailySize, difficulty: dailyDifficulty)
+        let size = dailySize
+        let tier = dailyDifficulty
+        return await Task.detached(priority: .userInitiated) {
+            DailyPuzzle.generate(seed: seed, size: size, difficulty: tier)?.puzzle
+        }.value
     }
 
     /// Fills everything but the last cell when a UI test asks for it.

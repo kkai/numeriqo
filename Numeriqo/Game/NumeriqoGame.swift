@@ -20,7 +20,10 @@ final class NumeriqoGame {
     private(set) var undoStack: [Move] = []
     private(set) var phase: Phase = .playing
     private(set) var elapsed: TimeInterval = 0
-    let isDaily: Bool
+    /// The day this daily belongs to; nil for any other game. Kept with the
+    /// game so a daily finished after midnight counts for the day it was.
+    let dailyDay: Int?
+    var isDaily: Bool { dailyDay != nil }
 
     /// The board immediately before the last move.
     ///
@@ -55,16 +58,16 @@ final class NumeriqoGame {
     /// let a player drift for twenty moves. See docs/TEACHING.md §6.
     var incorrectCells: Set<Cell> { Set(board.incorrectCells(for: puzzle)) }
 
-    init(puzzle: Puzzle, difficulty: Difficulty, isDaily: Bool = false) {
+    init(puzzle: Puzzle, difficulty: Difficulty, dailyDay: Int? = nil) {
         self.puzzle = puzzle
         self.difficulty = difficulty
-        self.isDaily = isDaily
+        self.dailyDay = dailyDay
     }
 
     init(snapshot: GameSnapshot) {
         self.puzzle = snapshot.puzzle
         self.difficulty = snapshot.difficulty
-        self.isDaily = snapshot.isDaily ?? false
+        self.dailyDay = snapshot.dailyDay
         self.board = snapshot.board
         self.undoStack = snapshot.undoStack
         self.elapsed = snapshot.elapsed
@@ -73,7 +76,8 @@ final class NumeriqoGame {
 
     var snapshot: GameSnapshot {
         GameSnapshot(puzzle: puzzle, board: board, undoStack: undoStack,
-                     difficulty: difficulty, elapsed: elapsed, isDaily: isDaily)
+                     difficulty: difficulty, elapsed: elapsed, isDaily: isDaily,
+                     dailyDay: dailyDay)
     }
 
     /// Claims the one-off mastery credit for a cell. False if it already paid out.

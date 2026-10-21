@@ -106,4 +106,50 @@ final class TutorialWalkTests: XCTestCase {
         XCTAssertTrue(app.buttons["Digit 1"].waitForExistence(timeout: 20),
                       "declining should resume the saved game, not discard it")
     }
+
+    /// The daily shared the one save slot through 3.1: opening it and backing
+    /// out replaced the unfinished game, and its win button regenerated the
+    /// same daily. Now it has its own slot and hands back to the saved game.
+    func testTheDailyLeavesTheSavedGameAlone() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTestResetState"]
+        app.launch()
+
+        let skip = app.buttons["Skip, I know Calcudoku"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 10))
+        skip.tap()
+        XCTAssertTrue(app.buttons["Digit 1"].waitForExistence(timeout: 20))
+        app.buttons["Digit 1"].tap()
+        cell(app, 0, 0).tap()
+        app.navigationBars.buttons.firstMatch.tap()
+
+        // Into the daily and straight back out: both games stay saved.
+        let daily = app.buttons["Today's puzzle"]
+        XCTAssertTrue(daily.waitForExistence(timeout: 10))
+        daily.tap()
+        XCTAssertTrue(cell(app, 5, 5).waitForExistence(timeout: 30))
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Continue"].waitForExistence(timeout: 10),
+                      "opening the daily must not replace the unfinished game")
+
+        // Relaunch keeping state, with the board solved but for one cell, and
+        // finish the daily.
+        app.terminate()
+        app.launchArguments = ["-uiTestSolveBoard"]
+        app.launch()
+        XCTAssertTrue(daily.waitForExistence(timeout: 10))
+        daily.tap()
+        let last = cell(app, 5, 5)
+        XCTAssertTrue(last.waitForExistence(timeout: 30))
+        last.tap()
+        let next = app.buttons["Continue your game"]
+        for digit in 1...6 where !next.exists {
+            app.buttons["Digit \(digit)"].tap()
+        }
+        XCTAssertTrue(next.waitForExistence(timeout: 10),
+                      "the daily's win should offer the saved game back")
+        next.tap()
+        XCTAssertTrue(app.navigationBars["4×4 · Gentle"].waitForExistence(timeout: 10),
+                      "Continue your game should open the saved 4×4")
+    }
 }

@@ -113,6 +113,91 @@ import Testing
         #expect(store.daily.bestStreak == 3)
     }
 
+    /// A daily finished after a newer one (started before midnight, or a
+    /// clock set back) reset the streak to 1 and moved the last day backwards.
+    @Test func anOlderDailyFinishedLateLeavesTheStreakAlone() throws {
+        let store = ProgressStore(userDefaults: try makeDefaults())
+        store.recordDailyCompleted(day: 10)
+        store.recordDailyCompleted(day: 11)
+        store.recordDailyCompleted(day: 9)
+        #expect(store.daily.currentStreak == 2)
+        #expect(store.daily.lastCompletedDay == 11)
+        #expect(store.hasCompletedDaily(day: 11))
+    }
+
+    /// The stored count only changes on a solve, so Home said "5 days in a
+    /// row. Keep it going." long after the streak had gone.
+    @Test func aMissedDayShowsNoStreak() throws {
+        let store = ProgressStore(userDefaults: try makeDefaults())
+        for day in 10...14 { store.recordDailyCompleted(day: day) }
+        #expect(store.displayStreak(today: 14) == 5)
+        #expect(store.displayStreak(today: 15) == 5, "not broken before today's is done")
+        #expect(store.displayStreak(today: 16) == 0)
+        #expect(store.daily.bestStreak == 5)
+        #expect(ProgressStore(userDefaults: try makeDefaults()).displayStreak(today: 0) == 0)
+    }
+
+    /// Through 3.1 the daily shared the one slot: opening it replaced a
+    /// half-finished game, and a daily left overnight came back under
+    /// Continue and counted for the day it was finished on.
+    @Test func theDailyHasItsOwnDatedSaveSlot() throws {
+        let defaults = try makeDefaults()
+        let store = ProgressStore(userDefaults: defaults)
+        let ordinary = try #require(PuzzleGenerator.generate(size: 4, seed: 77))
+        let todays = try #require(PuzzleGenerator.generate(size: 6, seed: 78))
+        store.saveGame(NumeriqoGame(puzzle: ordinary.puzzle, difficulty: .gentle).snapshot)
+        let daily = NumeriqoGame(puzzle: todays.puzzle, difficulty: .steady, dailyDay: 500)
+        daily.place(daily.puzzle.solutionValue(at: Cell(0, 0)), at: Cell(0, 0))
+        store.saveGame(daily.snapshot)
+
+        let relaunched = ProgressStore(userDefaults: defaults)
+        #expect(relaunched.savedGame?.puzzle == ordinary.puzzle)
+        let saved = try #require(relaunched.savedDaily(for: 500))
+        #expect(relaunched.savedDaily(for: 501) == nil, "another day's daily is never resumed")
+        let resumed = NumeriqoGame(snapshot: saved)
+        #expect(resumed.dailyDay == 500)
+        #expect(resumed.isDaily)
+        #expect(resumed.board == daily.board)
+
+        relaunched.clearSavedDaily()
+        #expect(ProgressStore(userDefaults: defaults).savedDaily == nil)
+        #expect(ProgressStore(userDefaults: defaults).savedGame != nil)
+    }
+
+    /// A 3.1 daily save carries `isDaily` and no day. It must still decode,
+    /// and must not pass for a dated daily until `GameView` has checked it.
+    @Test func aDailySaveFrom31StillDecodes() throws {
+        let generated = try #require(PuzzleGenerator.generate(size: 6, seed: 79))
+        var snapshot = NumeriqoGame(puzzle: generated.puzzle, difficulty: .steady).snapshot
+        snapshot.isDaily = true
+        var json = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(snapshot)) as? [String: Any])
+        json.removeValue(forKey: "dailyDay")
+        let old = try JSONDecoder().decode(
+            GameSnapshot.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(old.isDaily == true)
+        #expect(old.dailyDay == nil)
+        #expect(!NumeriqoGame(snapshot: old).isDaily)
+
+        let defaults = try makeDefaults()
+        defaults.set(try JSONEncoder().encode(old), forKey: "numeriqo.saveGame.v1")
+        let store = ProgressStore(userDefaults: defaults)
+        #expect(store.savedGame?.isDaily == true, "stays under Continue until it is checked")
+        #expect(store.savedDaily == nil)
+    }
+
+    /// What `GameView` compares a 3.1 daily save against: the day's board.
+    @Test func theDailyPuzzleIsTheSeededBoard() async throws {
+        let day = 20_710
+        let seed = DailyPuzzle.seed(day: day, size: GameView.dailySize,
+                                    difficulty: GameView.dailyDifficulty)
+        let direct = try #require(DailyPuzzle.generate(seed: seed, size: GameView.dailySize,
+                                                       difficulty: GameView.dailyDifficulty))
+        let viaView = try #require(await GameView.dailyPuzzle(day: day))
+        #expect(viaView == direct.puzzle)
+        #expect(try #require(await GameView.dailyPuzzle(day: day + 1)) != direct.puzzle)
+    }
+
     @Test func dailySeedIsStableAcrossDevices() {
         // Everyone must get the same board on the same day, or a streak means
         // nothing. The seed comes from the date, never from the device.

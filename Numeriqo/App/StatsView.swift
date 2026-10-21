@@ -40,7 +40,7 @@ struct StatsView: View {
             if FeatureGate.areFullStatsAvailable(unlocked: entitlements.isUnlocked) {
                 Section("Solves") {
                     counter("Puzzles solved", progress.stats.puzzlesSolved)
-                    counter("Daily streak", progress.daily.currentStreak)
+                    counter("Daily streak", progress.displayStreak(today: DailyPuzzle.today))
                     counter("Best streak", progress.daily.bestStreak)
                 }
 
