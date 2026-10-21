@@ -1,7 +1,9 @@
 # Numeriqo 3.1.1: submission runbook
 
-**Staged 2026-10-21, both apps: 3.1.1 versions created, build 3111 attached,
-not submitted.** Merged into `main` and pushed (`b63085c`). 3.1 (3102) went
+**Submitted for review 2026-10-21 15:48 UTC, both apps (`WAITING_FOR_REVIEW`).**
+Review submissions: Numeriqo `3a6bbd5c-4110-4d6b-962f-cc2a56e631e5`, Numeriqo
+Pro `b4efd931-ca9b-47c0-a60e-d667833b5c0f`. Next: Release each once approved
+(manual release). Merged into `main` and pushed (`b63085c`). 3.1 (3102) went
 live on both SKUs on 2026-10-21.
 
 | App | 3.1.1 version id | Build 3111 id (= delivery id) |
@@ -54,7 +56,7 @@ and reads `progress.daily` directly, so it is unaffected until that line moves.
   dylibs, privacy manifest present, no `-uiTestResetState`/kenken/kendoku in
   the binary), `--validate-app` clean, uploaded, `VALID`, attached.
 - [x] Description, keywords and screenshots (5 iPhone + 5 iPad) carried over.
-- [ ] Kai: submit each for review (web, or the reviewSubmissions API flow),
-  then Release once approved.
+- [x] Submitted both by API 2026-10-21 15:48 UTC.
+- [ ] Kai: Release each once approved.
 - [ ] Device check: leave a game unfinished, open the daily, back out,
   Continue still there; finish a daily after midnight.
